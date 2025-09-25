@@ -49,7 +49,7 @@ public class ServerDataLoader
 	private final Map<UUID, PlayerData> playerDataCache = new HashMap<UUID, PlayerData>();
 	private final Map<String, PlayerData> namedPlayerDataCache = new HashMap<String, PlayerData>();
 	private final Map<String, WarpLocation> warps = new HashMap<String, WarpLocation>();
-	private final List<String> fastWarps = new ArrayList<String>();
+	
 	
 	public ServerDataLoader(ServerConfigurationManager mgr)
 	{
@@ -103,31 +103,7 @@ public class ServerDataLoader
 		return warps;
 	}
 	
-	public void addFastWarp(String name)
-	{
-		if(fastWarps.add(name))
-		{
-			dataProvider.saveFastWarp(name);
-			((CommandHandler)mgr.getServerInstance().getCommandManager()).getRegistry().registerCommand(new FastWarpCommand(name));
-		}
-	}
-	
-	public boolean removeFastWarp(String name)
-	{
-		if(fastWarps.remove(name))
-		{
-			dataProvider.removeFastWarp(name);
-			((CommandHandler)mgr.getServerInstance().getCommandManager()).getRegistry().getCommandMap().remove(name);
-			return true;
-		}
-		return false;
-	}
-	
-	public List<String> getFastWarps()
-	{
-		return fastWarps;
-	}
-	
+
 	public void loadCache()
 	{
 		dataProvider.init();
@@ -135,7 +111,7 @@ public class ServerDataLoader
 		
 		loadAllPlayerData();
 		warps.putAll(dataProvider.loadWarps());
-		fastWarps.addAll(dataProvider.loadFastWarps());
+
 	}
 	
 	public void reloadPlayerCache()
@@ -161,27 +137,7 @@ public class ServerDataLoader
 		}
 	}
 	
-	public void addDefaultWarps()
-	{
-		if(!warps.containsKey("spawn"))
-		{
-			WorldInfo wi = mgr.getServerInstance().getMultiWorld().getWorldByID(0).getWorldInfo();
-			setWarp("spawn", new WarpLocation(0, wi.getSpawnX(), wi.getSpawnY(), wi.getSpawnZ(), 0, 0, 20));
-		}
-		if(!fastWarps.contains("spawn"))
-		{
-			fastWarps.add("spawn");
-			dataProvider.saveFastWarp("spawn");
-		}
-		if(!isClient)
-		{
-			String firstSpawn = ConfigurationHandler.getServerConfig().settings.spawnLocations.firstSpawn;
-			String deathSpawn = ConfigurationHandler.getServerConfig().settings.spawnLocations.deathSpawn;
-			if(!warps.containsKey(firstSpawn)) setWarp(firstSpawn, getWarp("spawn"));
-			if(!warps.containsKey(deathSpawn)) setWarp(deathSpawn, getWarp("spawn"));
-		}
-	}
-	
+
 	public void initializeConnectionToPlayer(final NetworkManager network, final EntityPlayerMP player, final NetHandlerPlayServer nethandler)
 	{
 		if(isClient)

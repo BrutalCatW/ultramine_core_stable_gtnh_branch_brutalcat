@@ -40,9 +40,4 @@ public interface IDataProvider
 
 	void removeWarp(String name);
 	
-	List<String> loadFastWarps();
-	
-	void saveFastWarp(String name);
-	
-	void removeFastWarp(String name);
 }

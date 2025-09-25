@@ -46,7 +46,7 @@ public class JDBCDataProvider implements IDataProvider
 	private final String tab_player_gamedata;
 	private final String tab_player_data;
 	private final String tab_warps;
-	private final String tab_fastwarps;
+	
 
 	private final TObjectIntMap<UUID> playerIDs = TCollections.synchronizedMap(new TObjectIntHashMap<UUID>(128, 0.75F, -1));
 
@@ -59,7 +59,7 @@ public class JDBCDataProvider implements IDataProvider
 		tab_player_gamedata = tablePrefix + "player_gamedata";
 		tab_player_data = tablePrefix + "player_data";
 		tab_warps = tablePrefix + "warps";
-		tab_fastwarps = tablePrefix + "warps_fast";
+		
 		
 		ds = Databases.getDataSource(ConfigurationHandler.getServerConfig().settings.inSQLServerStorage.database);
 	}
@@ -108,13 +108,7 @@ public class JDBCDataProvider implements IDataProvider
 					+ "PRIMARY KEY (`id`),"
 					+ "UNIQUE KEY `name` (`name`)"
 					+ ") ENGINE=InnoDB");
-			
-			s.execute("CREATE TABLE IF NOT EXISTS `"+tab_fastwarps+"` ("
-					+ "`id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
-					+ "`name` varchar(32) NOT NULL,"
-					+ "PRIMARY KEY (`id`),"
-					+ "UNIQUE KEY `name` (`name`)"
-					+ ") ENGINE=InnoDB");
+
 		}
 		catch(Exception e)
 		{
@@ -449,91 +443,6 @@ public class JDBCDataProvider implements IDataProvider
 		});
 	}
 
-	@Override
-	public List<String> loadFastWarps()
-	{
-		List<String> list = new LinkedList<String>();
-		
-		Connection conn = null;
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-		try
-		{
-			conn = ds.getConnection();
-			ps = conn.prepareStatement("SELECT * FROM `"+tab_fastwarps+"`");
-			rs = ps.executeQuery();
-			while(rs.next())
-				list.add(rs.getString(2));
-		}
-		catch(Exception e)
-		{
-			log.warn("Failed to load fastwarps", e);
-		}
-		finally
-		{
-			close(conn, ps, rs);
-		}
-		
-		return list;
-	}
-
-	@Override
-	public void saveFastWarp(final String name)
-	{
-		GlobalExecutors.writingIO().execute(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				Connection conn = null;
-				PreparedStatement ps = null;
-				try
-				{
-					conn = ds.getConnection();
-					ps = conn.prepareStatement("INSERT INTO `"+tab_fastwarps+"` (`name`) VALUES (?)");
-					ps.setString(1, name);
-					ps.executeUpdate();
-				}
-				catch(Exception e)
-				{
-					log.warn("Failed to save fastwarp: " + name, e);
-				}
-				finally
-				{
-					close(conn, ps, null);
-				}
-			}
-		});
-	}
-
-	@Override
-	public void removeFastWarp(final String name)
-	{
-		GlobalExecutors.writingIO().execute(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				Connection conn = null;
-				PreparedStatement ps = null;
-				try
-				{
-					conn = ds.getConnection();
-					ps = conn.prepareStatement("DELETE FROM `"+tab_fastwarps+"` WHERE `name`=?");
-					ps.setString(1, name);
-					ps.executeUpdate();
-				}
-				catch(Exception e)
-				{
-					log.warn("Failed to remove fastwarp: " + name, e);
-				}
-				finally
-				{
-					close(conn, ps, null);
-				}
-			}
-		});
-	}
 
 	private int createPlayerID(Connection conn, GameProfile player) throws SQLException
 	{
