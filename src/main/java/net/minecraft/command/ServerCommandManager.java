@@ -2,20 +2,17 @@ package net.minecraft.command;
 
 import java.util.Iterator;
 import net.minecraft.command.server.CommandAchievement;
-import net.minecraft.command.server.CommandBanIp;
-import net.minecraft.command.server.CommandBanPlayer;
+
 import net.minecraft.command.server.CommandBlockLogic;
 import net.minecraft.command.server.CommandBroadcast;
 import net.minecraft.command.server.CommandDeOp;
 import net.minecraft.command.server.CommandEmote;
-import net.minecraft.command.server.CommandListBans;
+
 import net.minecraft.command.server.CommandListPlayers;
-import net.minecraft.command.server.CommandMessage;
-import net.minecraft.command.server.CommandMessageRaw;
+
 import net.minecraft.command.server.CommandNetstat;
 import net.minecraft.command.server.CommandOp;
-import net.minecraft.command.server.CommandPardonIp;
-import net.minecraft.command.server.CommandPardonPlayer;
+
 import net.minecraft.command.server.CommandPublishLocalServer;
 import net.minecraft.command.server.CommandSaveAll;
 import net.minecraft.command.server.CommandSaveOff;
@@ -25,7 +22,7 @@ import net.minecraft.command.server.CommandSetBlock;
 import net.minecraft.command.server.CommandSetDefaultSpawnpoint;
 import net.minecraft.command.server.CommandStop;
 import net.minecraft.command.server.CommandSummon;
-import net.minecraft.command.server.CommandTeleport;
+
 import net.minecraft.command.server.CommandTestFor;
 import net.minecraft.command.server.CommandTestForBlock;
 import net.minecraft.command.server.CommandWhitelist;
@@ -51,7 +48,7 @@ public class ServerCommandManager extends CommandHandler implements IAdminComman
 		this.registerCommand(new CommandToggleDownfall());
 		this.registerCommand(new CommandWeather());
 		this.registerCommand(new CommandXP());
-		this.registerCommand(new CommandTeleport());
+		
 		this.registerCommand(new CommandGive());
 		this.registerCommand(new CommandEffect());
 		this.registerCommand(new CommandEnchant());
@@ -59,11 +56,11 @@ public class ServerCommandManager extends CommandHandler implements IAdminComman
 		this.registerCommand(new CommandShowSeed());
 		this.registerCommand(new CommandHelp());
 		this.registerCommand(new CommandDebug());
-		this.registerCommand(new CommandMessage());
+		
 		this.registerCommand(new CommandBroadcast());
 		this.registerCommand(new CommandSetSpawnpoint());
 		this.registerCommand(new CommandSetDefaultSpawnpoint());
-		this.registerCommand(new CommandGameRule());
+		
 		this.registerCommand(new CommandClearInventory());
 		this.registerCommand(new CommandTestFor());
 		this.registerCommand(new CommandSpreadPlayers());
@@ -73,7 +70,7 @@ public class ServerCommandManager extends CommandHandler implements IAdminComman
 		this.registerCommand(new CommandSummon());
 		this.registerCommand(new CommandSetBlock());
 		this.registerCommand(new CommandTestForBlock());
-		this.registerCommand(new CommandMessageRaw());
+		
 
 		if (MinecraftServer.getServer().isDedicatedServer())
 		{
@@ -83,12 +80,7 @@ public class ServerCommandManager extends CommandHandler implements IAdminComman
 			this.registerCommand(new CommandSaveAll());
 			this.registerCommand(new CommandSaveOff());
 			this.registerCommand(new CommandSaveOn());
-			this.registerCommand(new CommandBanIp());
-			this.registerCommand(new CommandPardonIp());
-			this.registerCommand(new CommandBanPlayer());
-			this.registerCommand(new CommandListBans());
-			this.registerCommand(new CommandPardonPlayer());
-			this.registerCommand(new CommandServerKick());
+
 			this.registerCommand(new CommandListPlayers());
 			this.registerCommand(new CommandWhitelist());
 			this.registerCommand(new CommandSetPlayerTimeout());

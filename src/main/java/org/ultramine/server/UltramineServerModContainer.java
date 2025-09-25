@@ -16,7 +16,6 @@ import org.ultramine.commands.basic.BasicCommands;
 import org.ultramine.commands.basic.GenWorldCommand;
 import org.ultramine.commands.basic.OpenInvCommands;
 import org.ultramine.commands.basic.TechCommands;
-import org.ultramine.commands.basic.VanillaCommands;
 import org.ultramine.commands.syntax.DefaultCompleters;
 import org.ultramine.economy.EconomyCommands;
 import org.ultramine.permission.IPermissionManager;
@@ -176,7 +175,7 @@ public class UltramineServerModContainer extends DummyModContainer
 			e.getServer().getConfigurationManager().getDataLoader().registerPlayerDataExt(PlayerCoreData.class, "core");
 			e.registerArgumentHandlers(DefaultCompleters.class);
 			e.registerCommands(BasicPermissionCommands.class);
-			e.registerCommands(VanillaCommands.class);
+
 			e.registerCommands(BasicCommands.class);
 			e.registerCommands(TechCommands.class);
 			e.registerCommands(GenWorldCommand.class);
@@ -184,18 +183,12 @@ public class UltramineServerModContainer extends DummyModContainer
 			e.registerCommands(OpenInvCommands.class);
 			
 			for(String perm : new String[]{
-					"command.vanilla.help",
-					"command.vanilla.msg",
-					"command.vanilla.me",
-					"command.vanilla.kill",
-					"command.vanilla.list",
 					"ability.player.useblock",
 					"ability.player.useitem",
 					"ability.player.blockplace",
 					"ability.player.blockbreak",
 					"ability.player.attack",
 					"ability.player.chat",
-					"command.fastwarp.spawn",
 					})
 			{
 				e.getPermissionHandler().addToGroup(IPermissionManager.DEFAULT_GROUP_NAME, IPermissionManager.GLOBAL_WORLD, perm);
