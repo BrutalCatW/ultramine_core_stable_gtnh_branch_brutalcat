@@ -1,0 +1,392 @@
+#Server core
+ultramine.teleporter.fail.cooldownd=Вы сможете телепортироваться через %s секунд
+ultramine.teleporter.fail.dim=Не удалось телепортироваться: мир не существует или заблокирован
+ultramine.teleporter.fail.riding=Нельзя телепортироваться во время езды
+ultramine.teleporter.delay=Вы будете телепортированы через %s секунд
+ultramine.teleporter.canceled=Телепортация отменена
+
+ultramine.autobroadcast.debugmsg=Сервер нагружен на %s (В пике - %s), Тиков в секунду: %s/20, Игроков: %s
+ultramine.autobackup.start=Выполняется автоматический бэкап мира
+
+ultramine.tools.itemblocker.useitem=Использование данного предмета запрещено сервером
+ultramine.tools.itemblocker.useblock=Использование данного блока запрещено сервером
+ultramine.tools.itemblocker.rmitem=Данный предмет запрещен сервером
+
+ultramine.ability.blockbreak=У вас нет прав на разрушение блоков
+ultramine.ability.blockplace=У вас нет прав на установку блоков
+ultramine.ability.useitem=У вас нет прав на использование предметов
+ultramine.ability.useblock=У вас нет прав на использование блоков
+ultramine.ability.attack=У вас нет права наносить урон
+ultramine.ability.chat=У вас нет прав писать в чате
+
+ultramine.notify.loggedhidden=Присоединился к игре невидимым
+ultramine.hidden.chat=Вы не можете писать в чат в невидимости
+
+ultramine.time.day.1=день
+ultramine.time.day.2=дня
+ultramine.time.day.3=дней
+ultramine.time.hour.1=час
+ultramine.time.hour.2=часа
+ultramine.time.hour.3=часов
+ultramine.time.min.1=минута
+ultramine.time.min.1.gen=минуту
+ultramine.time.min.2=минуты
+ultramine.time.min.3=минут
+ultramine.time.sec.1=секунда
+ultramine.time.sec.1.gen=секунду
+ultramine.time.sec.2=секунды
+ultramine.time.sec.3=секунд
+
+ultramine.restart.after=Рестарт сервера через %s
+ultramine.restart.now1=Рестарт сервера!
+ultramine.restart.now2=Вы будете автоматически отключены от сервера
+ultramine.restart.kick1=Сервер был перезапущен
+ultramine.restart.kick2=Вы сможете войти через несколько минут
+
+#Command generic
+command.generic.world.invalid=Указанный мир не существует или неинициализирован '%s'
+command.generic.itemstack.data=Не удалось разобрать предмет: %s
+command.generic.itemstack.size=Не удалось разобрать количество предметов: %s
+
+#Vanilla replacements
+command.tp.usage=/tp [кого] <к кому> ИЛИ /tp [кого] [мир] <x> <y> <z>
+command.tp.description=Телепортация указанного игрока (или вас) к другому игроку или по координатам
+command.tp.success.player=Телепортирован '%s' к '%s'
+command.tp.success.coordinate=Телепортирован '%s' к [%s](%s, %s, %s)
+
+command.tphere.usage=/tphere [кого]
+command.tphere.description=Телепортация указанного игрока к вам
+
+command.difficulty.usage=/difficulty [мир] <peaceful easy normal hard>
+command.difficulty.description=Изменение сложности игры
+command.difficulty.success=Сложность мира %s изменена с %s на %s
+
+command.msg.usage=/msg <игрок> <сообщение ...>
+command.msg.description=Отправка приватного сообщения игроку
+command.msg.display.outgoing=[я -> %s] %s
+command.msg.display.incoming=[%s -> я] %s
+
+command.reply.usage=/reply <сообщение ...>
+command.reply.description=Отправка приватного сообщения последнему игроку, которому вы отправляли сообщение командой /msg
+command.reply.fail=Сначала используйте команду /msg
+
+command.weather.usage=/weather [мир] <clear rain thunder> [следующее изменение (секунд)]
+command.weather.description=Устанавливает погоду в текущем или указанном мире
+
+command.time.usage=/time [мир] [add|set] <day|night|время>
+command.time.description=Устанавливает время суток в текущем или указанном мире
+
+command.say.server=Сервер
+
+# Permissions
+command.pconfig.usage=/pconfig <save|reload>
+command.pconfig.description=Save or reload all permissions configs
+command.pconfig.success.save=Permissions are saved
+command.pconfig.success.reload=Permissions are reloaded
+
+command.pmixin.usage=/pmixin <mixin> <add|remove> <permissions ...> OR /pmixin <mixin> meta <key> <value>
+command.pmixin.description=Add or remove permissions to specified mixin
+command.pmixin.success.add=Add permission <%s> to mixin <%s>
+command.pmixin.success.remove=Remove permission <%s> from mixin <%s>
+command.pmixin.success.meta=Set meta <%s> to <%s> for mixin <%s>
+
+command.puser.usage=/puser [world] <player> <add|remove> <permissions ...> OR /puser [world] <player> meta <key> <value>
+command.puser.description=Add/remove permissions OR set meta for user in world (current is default)
+command.puser.success.group=Player <%s> added to group <%s>
+command.puser.success.add=Add permission <%s> to user <%s> in world <%s>
+command.puser.success.remove=Remove permission <%s> from user <%s> in world <%s>
+command.puser.success.meta=Set meta <%s> to <%s> for user <%s> in world <%s>
+
+command.pgroup.usage=/pgroup <group> <add|remove> <permissions ...> OR /pgroup <group> meta <key> <value>
+command.pgroup.description=Add/remove permissions OR set meta for group
+command.pgroup.success.parent=Set parent <%s> for group <%s>
+command.pgroup.success.add=Add permission <%s> to group <%s>
+command.pgroup.success.remove=Remove permission <%s> from group <%s>
+command.pgroup.success.meta=Set meta <%s> to <%s> for group <%s>
+
+#Economy commands
+economy.fail.currency=Указанная валюта не существует
+economy.fail.negativeamount=Сумма должна быть больше нуля
+economy.fail.notenough=На вашем счету недостаточно средств для совершения данной операции
+
+command.pay.usage=/pay <игрок> [валюта] <сумма>
+command.pay.description=Перечисляет указанную сумму на счет другого игрока
+command.pay.sended=Вы перечислили на счет игрока %s сумму в %s
+command.pay.received=Получено %s от игрока %s
+
+command.money.usage=/money [игрок] [валюта]
+command.money.description=Показывает информацию о вашем счете или счете другого игрока
+command.money.info=На счету игрока %s находится %s
+
+command.mgive.usage=/mgive <игрок> [валюта] <сумма>
+command.mgive.description=Выдает игроку указанную сумму
+command.mgive.sended=Вы выдали игроку %s сумму в %s
+command.mgive.received=Вам выдано %s
+
+command.mset.usage=/mset <игрок> [валюта] <сумма>
+command.mset.description=Устанавливает указанный  баланс на счету игрока
+command.mset.sended=Вы изменили баланс счета игрока %s с %s до %s
+command.mset.received=Баланс вашего счета изменен с %s до %s
+
+command.msub.usage=/msub <игрок> [валюта] <сумма>
+command.msub.description=Конфискует со счета игрока указанную сумму
+command.msub.sended=Вы конфисковали %s со счета игрока %s
+command.msub.received=С вашего счета конфисковано %s
+
+#Basic commands
+command.home.usage=/home [название]
+command.home.description=Телепортация на точку дома, устанавливаемую командой /sethome
+command.home.fail.notset=Точка дома не установлена
+command.home.multi.fail=У вас нет прав на использование множества домов
+command.home.other.fail=У нас нет прав на использование домов других игроков
+command.home.fail.interworld=Телепортация в дом между мирами отключена
+
+command.sethome.usage=/sethome [название]
+command.sethome.description=Устанавливает точку телепортации /home
+command.sethome.success=Дом установлен
+command.sethome.multi.fail=У вас нет прав на установку множества домов
+
+command.removehome.usage=/removehome <название>
+command.removehome.description=Удаляет точку дома с указанным названием
+command.removehome.fail=Точка дома с указанным названием не найдена
+command.removehome.success=Дом удален
+
+command.homelist.usage=/homelist
+command.homelist.description=Выводит список ваших домов
+command.homelist.head=Список домов:
+
+command.warp.usage=/warp <название>
+command.warp.description=Телепортирует вас на указанный варп
+command.warp.fail=Варп не найден
+command.warp.noperm.other=У вас нет прав на телепортацию других игроков
+command.warp.fail.interworld=Телепортация на варп между мирами отключена
+
+command.setwarp.usage=/setwarp <название> [случайный радиус]
+command.setwarp.description=Устанавливает новый варп на текущих координатах
+command.setwarp.fail=Варп с указанным именем уже существует
+command.setwarp.success=Варп установлен
+
+command.resetwarp.usage=/resetwarp <название> [случайный радиус]
+command.resetwarp.description=Устанавливает новый или перезаписывает существующий варп на текущих координатах
+command.resetwarp.success=Варп установлен
+
+command.removewarp.usage=/removewarp <название>
+command.removewarp.description=Удаляет варп с указанным именем
+command.removewarp.fail.spawn=Нельзя удалить варп спавна
+command.removewarp.fail.nowarp=Варп не найден
+command.removewarp.success=Варп удален
+
+command.warplist.usage=/warplist
+command.warplist.description=Выводит список всех публичных варпов
+command.warplist.head=Список варпов:
+
+command.back.usage=/back
+command.back.description=Телепортация в предыдущее расположение
+command.back.fail=Предыдущее расположение не найдено
+
+command.fastwarp.usage=/fastwarp <app|remove> <название>
+command.fastwarp.description=Добавляет фастварп
+command.fastwarp.fail.spawn=Нельзя изменить фастварп спавна
+command.fastwarp.fail.nowarp=Варп с указаным именем не определен; Используйте /setwarp
+command.fastwarp.fail.nofastwarp=Фастварп с указаным именем не определен
+command.fastwarp.fail.already=Фастварп с указаным именем уже установлен
+command.fastwarp.success.add=Фастварп добавлен
+command.fastwarp.success.remove=Фастварп удален
+command.fastwarp.use.description=Телепортация к этой точке
+
+command.setspawn.usage=/setspawn [случайный радиус]
+command.setspawn.description=Устанавливает точку спавна
+command.setspawn.success=Спавн установлен
+
+command.setlocalspawn.usage=/setlocalspawn
+command.setlocalspawn.description=Устанавливает локальный спавн текущего мира (ванильная логика)
+command.setlocalspawn.success=Локальный спавн установлен
+
+command.localspawn.usage=/localspawn
+command.localspawn.description=Телепортация на локальный спавн текущего мира (ванильная логика)
+
+command.heal.usage=/heal [игрок]
+command.heal.description=Восстанавливает здоровье и голод
+command.heal.noperm.other=У вас нет прав на излечение других игроков
+command.heal.success=Вы были излечены
+command.heal.success.other=Игрок %s был излечен
+
+command.dropall.usage=/dropall [игрок]
+command.dropall.description=Выбрасывает все вещи из инвентаря
+command.dropall.noperm.other=У вас нет прав на выбрасывание вещей другого игрока
+
+command.item.usage=/item <предмет> [количество] ИЛИ /item <игрок> <предмет{NBT с пробелами}>
+command.item.description=Выдает указанный предмет
+
+command.dupe.usage=/dupe [количество]
+command.dupe.description=Дюпает предмет в руке
+command.dupe.fail=Сначала возьмите в руку предмет для дюпа
+
+command.gm.usage=/gm
+command.gm.description=Переключает режим игры
+
+command.buttoncommand.usage=/buttoncommand <create> <команды ...> ИЛИ /buttoncommand <permission> <команды ...> ИЛИ /buttoncommand <remove|get>
+command.buttoncommand.description=Устанавливает серверную команду на любой блок
+command.buttoncommand.fail.noblock=Кнопка не выбрана, наведите курсор на кнопку
+command.buttoncommand.fail.already=Кнопка уже создана. Используйте /buttoncommand remove
+command.buttoncommand.fail.none=ButtonCommand не установлен на выбранный блок
+command.buttoncommand.success.create=ButtonCommand успешно создан
+command.buttoncommand.success.remove=ButtonCommand успешно удален
+command.buttoncommand.get.head=Список команд:
+command.buttoncommand.noperms=У вас нет прав для использования данной кнопки
+
+command.openinv.usage=/openinv <игрок>
+command.openinv.description=Открывает инвентарь указанного игрока
+command.openinv.fail.dead=Игрок мертв (инвентаря нет)
+
+command.openender.usage=/openender <игрок>
+command.openender.description=Открывает сундук края указанного игрока
+
+#Technical commands
+command.id.usage=/id <id>
+command.id.description=Показывает информацию об указанном id
+
+command.uptime.usage=/uptime
+command.uptime.description=Показыват информацию о загруженности сервера
+command.uptime.msg.up=Работает: %s
+command.uptime.msg.load=Загруженность: %s (В пике: %s)
+command.uptime.msg.tps=Тиков в секунду: %s/20 (%s)
+
+command.debuginfo.usage=/debuginfo [мир/игрок]
+command.debuginfo.description=Некоторая отладочная информация
+
+command.memstat.usage=/memstat
+command.memstat.description=Displays max, current allocated and free memory
+
+command.multiworld.usage=/multiworld <load|unload|hold|destroy|delete|wipe|unregister|drop|goto> <мир> ИЛИ /multiworld list ИЛИ /multiworld import <файл> [путь]
+command.multiworld.description=Все команды MultiWorld
+command.multiworld.list.head=Список измерений:
+command.multiworld.alreadyloaded=Измерение уже загружено
+command.multiworld.notregistered=Измерение на зарегистрировано (не существует)
+command.multiworld.notloaded=Измерение не загружено
+command.multiworld.load.start=Начата загрузка измерения
+command.multiworld.load.success=Измерение загружено
+command.multiworld.load.fail=Не удалось загрузить измерение
+command.multiworld.unload.start=Начата выгрузка измерения
+command.multiworld.unload.success=Измерение выгружено
+command.multiworld.unload.fail=Не удалось выгрузить измерение
+command.multiworld.hold.start=Начата блокировка измерения
+command.multiworld.hold.success=Измерение выгружено и заблокировано
+command.multiworld.hold.fail=Не удалось блокировать измерение
+command.multiworld.destroy.start=Начата выгрузка измерения без сохранения
+command.multiworld.destroy.success=Измерение выгружено
+command.multiworld.destroy.fail=Не удалось выгрузить измерение
+command.multiworld.delete.start=Начато удаление измерение
+command.multiworld.delete.success=Измерение удалено
+command.multiworld.delete.fail=Не удалось удалить измерение
+command.multiworld.wipe.start=Начат вайп измерение
+command.multiworld.wipe.success=Измерение вайпнуто
+command.multiworld.wipe.fail=Не удалось вайпнуть измерение
+command.multiworld.unregister.success=Измерение разрегистрировано
+command.multiworld.drop.success=Измерение удалено из конфигурации
+
+command.countentity.usage=/countentity <радиус>
+command.countentity.description=Подсчитывает количество Entity в радиусе
+command.countentity.result1=Найдено %s Entity. Мобов: %s, Предметов: %s
+command.countentity.result2=Монстров: %s, Животных: %s, Водных: %s, Летающих: %s
+
+command.clearentity.usage=/clearentity [all|mobs|items] <радиус>
+command.clearentity.description=Удаляет Entity по радиусу
+command.clearentity.success=Очищено %s Entity. Мобов: %s, Предметов: %s
+
+command.startlags.usage=/startlags <процент> ИЛИ /startlags stop
+command.startlags.description=Симулирует определенный процент нагрузки на сервер
+command.startlags.start=Start lagging on %s%%
+command.startlags.stop=Stop lagging
+
+command.restart.usage=/restart <задержка> ИЛИ /restart abort
+command.restart.description=Отложенный перезапуск сервера
+command.restart.abort.success=Растарт отменен
+command.restart.abort.fail=Рестарт еще не запущен
+command.restart.success=Рестарт запущен
+
+command.javagc.usage=/javaGC
+command.javagc.description=Инициировать сборку мусора
+command.javagc.success=Сборка мусора инициирована
+
+command.chunkgc.usage=/chunkgc
+command.chunkgc.description=Выгружает все неиспользуемые чанки
+command.chunkgc.success=Выгрузка чанков инициирована
+
+command.custmsg.usage=/custmsg <игрок|ALL> <сообщение>
+command.custmsg.description=Отправляет кастомное сообщение игроку (поддерживает цвета)
+
+command.genworld.usage=/genworld ИЛИ /genworld <радиус> ИЛИ /genworld <мир> <x> <z> <радиус> ИЛИ /genworld [мир] stop
+command.genworld.description=Генерирует мир по радиусу или в пределах мирового барьера
+command.genworld.already=Генерация указанного мира уже запущена. Сначала введите "/genworld stop"
+command.genworld.noborder=Мир не содержит барьера; добавьте барьер или используйте генерацию по радиусу
+command.genworld.start=Генерация мира запущена
+command.genworld.stop=Генерация мира остановлена (сгенерировано %s/%s чанков)
+command.genworld.stop.fail.notrun=Генерация указанного мира еще не была запущена
+command.genworld.complete=Генерация мира завершена (сгенерировано %s/%s чанков)
+command.genworld.process=Генерация мира: сгенерировано %s/%s чанков
+
+command.chunkdebug.usage=/chunkdebug <start|stop> ИЛИ /chunkdebug <TOP> [average|peak] [количество]
+command.chunkdebug.description=Запускает почанковое профилирование или выводит результаты
+command.chunkdebug.start=Почанковое профилирование запущено
+command.chunkdebug.stop=Почанковое профилирование остановлено
+command.chunkdebug.notstart=Почанковое профилирование еще не запущено. Подождите, пока будет собрана статистика
+command.chunkdebug.top.head=Топ чанков:
+
+command.backup.usage=/backup make [миры...] ИЛИ /backup list ИЛИ /backup apply <номер/путь> [flags: -noplayers -temp -restart -worlds ...]
+command.backup.description=Создает или применяет бэкап всех или указанных миров
+command.backup.make.started=Запущен бэкап для миров: %s
+command.backup.make.fail=Не найдено ни одного мира для бэкапа
+command.backup.list.head=Список бэкапов
+command.backup.apply.started=Запущено применение бэкапа миров: %s
+command.backup.apply.fail.none=Бэкап с номером %s не найден
+command.backup.apply.fail.nofile=Файл бэкапа не найден для пути: %s
+command.backup.apply.fail.zip.read=Не удается прочитать zip архив: %s
+command.backup.apply.fail.nothing=Не найдено ни одного мира для применения бэкапа
+command.backup.apply.fail.rmdir=Не удалось удалить директорию мира: %s
+command.backup.apply.fail.zip.unpack=Не удалось распаковать zip файл. это очень ОЧЕНЬ полохо. Может привести к полному разрушению миров. Пожалуйста, применить другой бэкап.
+command.backup.apply.success.temp=Бэкап успешно применен! Созданы временные миры:
+command.backup.apply.success=Бэкап успешно применен!
+
+command.recipecache.usage=/recipecache clear
+command.recipecache.description=Очищает кэш рецептов крафта
+command.recipecache.clear.success=Кэш рецептов крафта успешно очищен
+
+command.reloadcfg.usage=/reloadcfg
+command.reloadcfg.description=Перезагружает конфигурацию UltraMine сервера (из директории /settings)
+command.reloadcfg.success=Серверная конфигурация успешно перезагружена
+
+command.entitylist.usage=/entitylist [мир]
+command.entitylist.description=Показывает список всех загруженных Entity в указанном мире, либо во всех мирах
+
+command.killentity.usage=/killentity <id>
+command.killentity.description=Убивает Entity с указанным ID
+
+command.mute.usage=/mute <игрок> [время]
+command.mute.description=Запрещает игроку писать в чат определенное время
+command.mute.notify=У вас забрали право писать в чат
+command.mute.broadcast=Игроку %s запрещено писать в чат %s
+command.mute.broadcast.forever=Игроку %s навсегда запрещено писать в чат
+ultramine.ability.chat.muted=Возможность писать в чат была заблокирована на %s
+ultramine.ability.chat.muted.forever=Возможность писать в чат была заблокирована навсегда
+
+command.commandmute.usage=/commandmute <игрок> [время]
+command.commandmute.description=Запрещает игроку писать в чат и выполнять команды определенное время
+command.commandmute.notify=У вас забрали право писать в чат и выполнять команды
+command.commandmute.broadcast=Игроку %s запрещено писать в чат и выполнять команды %s
+command.commandmute.broadcast.forever=Игроку %s навсегда запрещено писать в чат и выполнять команды
+ultramine.ability.command.muted=Возможность выполнять команды была заблокирована на %s
+ultramine.ability.command.muted.forever=Возможность выполнять команды была заблокирована навсегда
+
+command.unmute.usage=/unmute <игрок>
+command.unmute.description=Возвращает право писать в чат
+command.unmute.fail=Указанный игрок не замьючен
+command.unmute.notify=Вам возвращено право писать в чат
+command.unmute.success=Игроку %s теперь разрешено писать в чат
+
+command.vanish.usage=/vanish
+command.vanish.description=Делает вас невидимым для других игроков
+command.vanish.success.hide=Вы в невидимости
+command.vanish.success.show=Теперь вас видно
+command.vanish.notify.hide=зашел в невидимость
+command.vanish.notify.show=вышел из невидимости
