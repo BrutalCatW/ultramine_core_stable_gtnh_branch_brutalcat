@@ -1,0 +1,3244 @@
+diff --git a/src/main/java/cpw/mods/fml/common/event/FMLServerStartingEvent.java b/src/main/java/cpw/mods/fml/common/event/FMLServerStartingEvent.java
+index 638e6c2..ecdd612 100644
+--- a/src/main/java/cpw/mods/fml/common/event/FMLServerStartingEvent.java
++++ b/src/main/java/cpw/mods/fml/common/event/FMLServerStartingEvent.java
+@@ -21,7 +21,6 @@
+ import org.ultramine.commands.syntax.ArgumentsPatternParser;
+ import org.ultramine.commands.syntax.IArgumentCompletionHandler;
+ import org.ultramine.commands.syntax.IArgumentValidationHandler;
+-import org.ultramine.server.PermissionHandler;
+ 
+ public class FMLServerStartingEvent extends FMLStateEvent
+ {
+@@ -77,11 +76,6 @@
+ 		getArgumentsParser().registerHandlers(holder);
+ 	}
+ 
+-	public PermissionHandler getPermissionHandler()
+-	{
+-		return PermissionHandler.getInstance();
+-	}
+-
+ 	private CommandRegistry getCommandRegistry()
+ 	{
+ 		return ((CommandHandler) getServer().getCommandManager()).getRegistry();
+diff --git a/src/main/java/net/minecraft/command/ServerCommandManager.java b/src/main/java/net/minecraft/command/ServerCommandManager.java
+index 8e9633e..fc21385 100644
+--- a/src/main/java/net/minecraft/command/ServerCommandManager.java
++++ b/src/main/java/net/minecraft/command/ServerCommandManager.java
+@@ -34,12 +34,15 @@
+ import net.minecraft.server.MinecraftServer;
+ import net.minecraft.util.ChatComponentTranslation;
+ import net.minecraft.util.EnumChatFormatting;
+-import org.ultramine.permission.MinecraftPermissions;
+-import org.ultramine.server.PermissionHandler;
++import org.ultramine.core.service.InjectService;
++import org.ultramine.core.permissions.MinecraftPermissions;
++import org.ultramine.core.permissions.Permissions;
+ 
+ public class ServerCommandManager extends CommandHandler implements IAdminCommand
+ {
+ 	private static final String __OBFID = "CL_00000922";
++	@InjectService
++	private static Permissions perms;
+ 
+ 	public ServerCommandManager()
+ 	{
+@@ -128,7 +131,7 @@
+ 			{
+ 				EntityPlayerMP entityplayermp = (EntityPlayerMP)iterator.next();
+ 
+-				if (entityplayermp != par1ICommandSender && PermissionHandler.getInstance().hasGlobally(entityplayermp, MinecraftPermissions.COMMAND_NOTIFICATION) && (!(par1ICommandSender instanceof RConConsoleSource) || MinecraftServer.getServer().func_152363_m()))
++				if (entityplayermp != par1ICommandSender && perms.has(entityplayermp, MinecraftPermissions.COMMAND_NOTIFICATION) && (!(par1ICommandSender instanceof RConConsoleSource) || MinecraftServer.getServer().func_152363_m()))
+ 				{
+ 					entityplayermp.addChatMessage(chatcomponenttranslation);
+ 				}
+diff --git a/src/main/java/net/minecraft/entity/EntityTracker.java b/src/main/java/net/minecraft/entity/EntityTracker.java
+index a8107c5..1fa7eb3 100644
+--- a/src/main/java/net/minecraft/entity/EntityTracker.java
++++ b/src/main/java/net/minecraft/entity/EntityTracker.java
+@@ -38,9 +38,9 @@
+ import net.minecraft.world.chunk.Chunk;
+ import org.apache.logging.log4j.LogManager;
+ import org.apache.logging.log4j.Logger;
+-import org.ultramine.permission.MinecraftPermissions;
+ 
+ import cpw.mods.fml.common.registry.EntityRegistry;
++import org.ultramine.core.permissions.MinecraftPermissions;
+ 
+ public class EntityTracker
+ {
+diff --git a/src/main/java/net/minecraft/entity/EntityTrackerEntry.java b/src/main/java/net/minecraft/entity/EntityTrackerEntry.java
+index f638856..496c144 100644
+--- a/src/main/java/net/minecraft/entity/EntityTrackerEntry.java
++++ b/src/main/java/net/minecraft/entity/EntityTrackerEntry.java
+@@ -56,9 +56,9 @@
+ import net.minecraft.world.storage.MapData;
+ import org.apache.logging.log4j.LogManager;
+ import org.apache.logging.log4j.Logger;
+-import org.ultramine.permission.MinecraftPermissions;
+ 
+ import cpw.mods.fml.common.network.internal.FMLNetworkHandler;
++import org.ultramine.core.permissions.MinecraftPermissions;
+ 
+ public class EntityTrackerEntry
+ {
+diff --git a/src/main/java/net/minecraft/entity/player/EntityPlayerMP.java b/src/main/java/net/minecraft/entity/player/EntityPlayerMP.java
+index 5314d20..2a48196 100644
+--- a/src/main/java/net/minecraft/entity/player/EntityPlayerMP.java
++++ b/src/main/java/net/minecraft/entity/player/EntityPlayerMP.java
+@@ -101,7 +101,7 @@
+ import org.apache.commons.io.Charsets;
+ import org.apache.logging.log4j.LogManager;
+ import org.apache.logging.log4j.Logger;
+-import org.ultramine.server.PermissionHandler;
++import org.ultramine.core.service.InjectService;
+ import org.ultramine.server.WorldConstants;
+ import org.ultramine.server.event.PlayerDeathEvent;
+ import org.ultramine.server.internal.UMHooks;
+@@ -114,6 +114,7 @@
+ import net.minecraftforge.common.ForgeHooks;
+ import net.minecraftforge.common.MinecraftForge;
+ import net.minecraftforge.event.entity.player.PlayerDropsEvent;
++import org.ultramine.core.permissions.Permissions;
+ 
+ public class EntityPlayerMP extends EntityPlayer implements ICrafting
+ {
+@@ -990,10 +991,22 @@
+ 	}
+ 	
+ 	/* ===================================== ULTRAMINE START =====================================*/
+-	
++
+ 	private int renderDistance;
+ 	private final ChunkSendManager chunkMgr = new ChunkSendManager(this);
+ 	private PlayerData playerData;
++	@InjectService
++	private static Permissions perms;
++
++	public boolean hasPermission(String permission)
++	{
++		return perms.has(this, permission);
++	}
++
++	public String getMeta(String key)
++	{
++		return perms.getMeta(this, key);
++	}
+ 	
+ 	@Override
+ 	public boolean isEntityPlayerMP()
+@@ -1027,16 +1040,6 @@
+ 		this.playerData = playerData;
+ 	}
+ 	
+-	public boolean hasPermission(String permission)
+-	{
+-		return PermissionHandler.getInstance().has(this, permission);
+-	}
+-	
+-	public String getMeta(String key)
+-	{
+-		return PermissionHandler.getInstance().getMeta(this, key);
+-	}
+-	
+ 	public String getTabListName()
+ 	{
+ 		String meta = getMeta("tablistcolor");
+diff --git a/src/main/java/net/minecraft/network/NetHandlerPlayServer.java b/src/main/java/net/minecraft/network/NetHandlerPlayServer.java
+index 9a2cb13..7d2f892 100644
+--- a/src/main/java/net/minecraft/network/NetHandlerPlayServer.java
++++ b/src/main/java/net/minecraft/network/NetHandlerPlayServer.java
+@@ -97,10 +97,11 @@
+ import net.minecraftforge.event.ForgeEventFactory;
+ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+ 
+-import org.ultramine.permission.MinecraftPermissions;
+-import org.ultramine.server.PermissionHandler;
++import org.ultramine.core.service.InjectService;
++import org.ultramine.core.permissions.MinecraftPermissions;
+ import org.ultramine.server.event.PlayerSneakingEvent;
+ import org.ultramine.server.event.PlayerSwingItemEvent;
++import org.ultramine.core.permissions.Permissions;
+ 
+ public class NetHandlerPlayServer implements INetHandlerPlayServer
+ {
+@@ -123,6 +124,8 @@
+ 	private double lastPosZ;
+ 	private boolean hasMoved = true;
+ 	private static final String __OBFID = "CL_00001452";
++	@InjectService
++	private static Permissions perms;
+ 
+ 	public NetHandlerPlayServer(MinecraftServer p_i1530_1_, NetworkManager p_i1530_2_, EntityPlayerMP p_i1530_3_)
+ 	{
+@@ -747,7 +750,7 @@
+ 
+ 			this.chatSpamThresholdCount += 20;
+ 
+-			if (this.chatSpamThresholdCount > 200 && !PermissionHandler.getInstance().has(playerEntity, MinecraftPermissions.ALLOW_SPAM))
++			if (this.chatSpamThresholdCount > 200 && !perms.has(playerEntity, MinecraftPermissions.ALLOW_SPAM))
+ 			{
+ 				this.kickPlayerFromServer("disconnect.spam");
+ 			}
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index 1c3490d..8a79c97 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -79,7 +79,6 @@
+ import org.apache.commons.lang3.Validate;
+ import org.apache.logging.log4j.LogManager;
+ import org.apache.logging.log4j.Logger;
+-import org.ultramine.permission.IPermissionManager;
+ import org.ultramine.scheduler.Scheduler;
+ import org.ultramine.server.BackupManager;
+ import org.ultramine.server.ConfigurationHandler;
+@@ -1505,7 +1504,6 @@
+ 	public final long startTime = System.currentTimeMillis();
+ 	private Thread serverThread;
+ 	private final MultiWorld multiworld = new MultiWorld(this);
+-	private IPermissionManager permissionManager;
+ 	private final Scheduler scheduler = new Scheduler();
+ 	
+ 	public Thread getServerThread()
+@@ -1522,16 +1520,6 @@
+ 	{
+ 		return null;
+ 	}
+-
+-	public IPermissionManager getPermissionManager()
+-	{
+-		return permissionManager;
+-	}
+-
+-	protected void setPermissionManager(IPermissionManager permissionManager)
+-	{
+-		this.permissionManager = permissionManager;
+-	}
+ 	
+ 	public Scheduler getScheduler()
+ 	{
+diff --git a/src/main/java/net/minecraft/server/dedicated/DedicatedPlayerList.java b/src/main/java/net/minecraft/server/dedicated/DedicatedPlayerList.java
+index b26a651..3bc9046 100644
+--- a/src/main/java/net/minecraft/server/dedicated/DedicatedPlayerList.java
++++ b/src/main/java/net/minecraft/server/dedicated/DedicatedPlayerList.java
+@@ -10,9 +10,7 @@
+ 
+ import org.apache.logging.log4j.LogManager;
+ import org.apache.logging.log4j.Logger;
+-import org.ultramine.permission.MinecraftPermissions;
+ import org.ultramine.server.ConfigurationHandler;
+-import org.ultramine.server.PermissionHandler;
+ 
+ @SideOnly(Side.SERVER)
+ public class DedicatedPlayerList extends ServerConfigurationManager
+@@ -56,13 +54,11 @@
+ 	public void func_152605_a(GameProfile p_152605_1_)
+ 	{
+ 		super.func_152605_a(p_152605_1_);
+-		PermissionHandler.getInstance().save();
+ 	}
+ 
+ 	public void func_152610_b(GameProfile p_152610_1_)
+ 	{
+ 		super.func_152610_b(p_152610_1_);
+-		PermissionHandler.getInstance().save();
+ 	}
+ 
+ 	public void func_152597_c(GameProfile p_152597_1_)
+diff --git a/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java b/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
+index b907c12..172091d 100644
+--- a/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
++++ b/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
+@@ -41,12 +41,10 @@
+ 
+ import org.apache.logging.log4j.LogManager;
+ import org.apache.logging.log4j.Logger;
+-import org.ultramine.permission.MinecraftPermissions;
+-import org.ultramine.permission.PermissionRepository;
+-import org.ultramine.permission.internal.ServerPermissionManager;
++import org.ultramine.core.service.InjectService;
++import org.ultramine.core.permissions.MinecraftPermissions;
+ import org.ultramine.server.BackupManager;
+ import org.ultramine.server.ConfigurationHandler;
+-import org.ultramine.server.PermissionHandler;
+ import org.ultramine.server.UltramineServerConfig;
+ import org.ultramine.server.WorldsConfig.WorldConfig;
+ import org.ultramine.server.bootstrap.UMBootstrap;
+@@ -54,7 +52,7 @@
+ import org.ultramine.server.internal.UMHooks;
+ import org.ultramine.server.util.BasicTypeParser;
+ import org.ultramine.server.util.GlobalExecutors;
+-import org.ultramine.server.world.WorldDescriptor;
++import org.ultramine.core.permissions.Permissions;
+ 
+ @SideOnly(Side.SERVER)
+ public class DedicatedServer extends MinecraftServer implements IServer
+@@ -255,7 +253,6 @@
+ 		this.setBuildLimit((this.getBuildLimit() + 8) / 16 * 16);
+ 		this.setBuildLimit(MathHelper.clamp_int(this.getBuildLimit(), 64, 256));
+ 		globalWConf.settings.maxBuildHeight = this.getBuildLimit();
+-		this.setPermissionManager(new ServerPermissionManager(ConfigurationHandler.getSettingDir(), new PermissionRepository())); // ultramine
+ 		if (!FMLCommonHandler.instance().handleServerAboutToStart(this)) { return false; }
+ 		field_155771_h.info("Preparing level \"" + this.getFolderName() + "\"");
+ 		this.loadAllWorlds(this.getFolderName(), this.getFolderName(), k, worldtype, s2);
+@@ -452,7 +449,7 @@
+ 		{
+ 			return false;
+ 		}
+-		else if (PermissionHandler.getInstance().has(par5EntityPlayer, MinecraftPermissions.IGNORE_SPAWN_PROTECTION))
++		else if (perms.has(par5EntityPlayer, MinecraftPermissions.IGNORE_SPAWN_PROTECTION))
+ 		{
+ 			return false;
+ 		}
+@@ -576,7 +573,9 @@
+ 	}
+ 	
+ 	/* ======================================== ULTRAMINE START =====================================*/
+-	
++
++	@InjectService
++	private static Permissions perms;
+ 	private final BackupManager backupMgr = new BackupManager(this);
+ 	
+ 	@Override
+diff --git a/src/main/java/net/minecraft/server/integrated/IntegratedServer.java b/src/main/java/net/minecraft/server/integrated/IntegratedServer.java
+index 1a4bdcf..9261fcc 100644
+--- a/src/main/java/net/minecraft/server/integrated/IntegratedServer.java
++++ b/src/main/java/net/minecraft/server/integrated/IntegratedServer.java
+@@ -32,8 +32,6 @@
+ 
+ import org.apache.logging.log4j.LogManager;
+ import org.apache.logging.log4j.Logger;
+-import org.ultramine.permission.PermissionRepository;
+-import org.ultramine.permission.internal.ClientPermissionManager;
+ 
+ @SideOnly(Side.CLIENT)
+ public class IntegratedServer extends MinecraftServer
+@@ -98,7 +96,6 @@
+ 		this.setAllowFlight(true);
+ 		logger.info("Generating keypair");
+ 		this.setKeyPair(CryptManager.createNewKeyPair());
+-		this.setPermissionManager(new ClientPermissionManager(getServerOwner(), new PermissionRepository())); // ultramine
+ 		if (!FMLCommonHandler.instance().handleServerAboutToStart(this)) { return false; }
+ 		this.loadAllWorlds(this.getFolderName(), this.getWorldName(), this.theWorldSettings.getSeed(), this.theWorldSettings.getTerrainType(), this.theWorldSettings.func_82749_j());
+ 		this.setMOTD(this.getServerOwner() + " - " + this.worldServers[0].getWorldInfo().getWorldName());
+diff --git a/src/main/java/net/minecraft/server/management/ServerConfigurationManager.java b/src/main/java/net/minecraft/server/management/ServerConfigurationManager.java
+index ac7e870..f963af7 100644
+--- a/src/main/java/net/minecraft/server/management/ServerConfigurationManager.java
++++ b/src/main/java/net/minecraft/server/management/ServerConfigurationManager.java
+@@ -69,7 +69,7 @@
+ 
+ import org.apache.logging.log4j.LogManager;
+ import org.apache.logging.log4j.Logger;
+-import org.ultramine.permission.MinecraftPermissions;
++import org.ultramine.core.permissions.MinecraftPermissions;
+ import org.ultramine.server.ConfigurationHandler;
+ import org.ultramine.server.data.ServerDataLoader;
+ import org.ultramine.server.internal.UMHooks;
+diff --git a/src/main/java/org/ultramine/commands/CommandContext.java b/src/main/java/org/ultramine/commands/CommandContext.java
+index f8fae7a..9f4c236 100644
+--- a/src/main/java/org/ultramine/commands/CommandContext.java
++++ b/src/main/java/org/ultramine/commands/CommandContext.java
+@@ -15,11 +15,12 @@
+ import net.minecraft.util.IChatComponent;
+ import net.minecraft.world.WorldServer;
+ 
+-import org.ultramine.server.PermissionHandler;
++import org.ultramine.core.service.InjectService;
+ import org.ultramine.server.data.ServerDataLoader;
+ import org.ultramine.server.data.player.PlayerData;
+ import org.ultramine.server.util.BasicTypeFormatter;
+ import org.ultramine.server.util.BasicTypeParser;
++import org.ultramine.core.permissions.Permissions;
+ 
+ import java.util.ArrayList;
+ import java.util.Arrays;
+@@ -31,6 +32,8 @@
+ 
+ public class CommandContext
+ {
++	@InjectService
++	private static Permissions perms;
+ 	private ICommandSender sender;
+ 	private String[] args;
+ 	private IExtendedCommand command;
+@@ -130,13 +133,13 @@
+ 	
+ 	public void checkSenderPermission(String permission, String msg)
+ 	{
+-		if (!senderIsServer() && !PermissionHandler.getInstance().has(sender, permission))
++		if (!senderIsServer() && !perms.has(sender, permission))
+ 			throw new CommandException(msg);
+ 	}
+ 
+ 	public void checkSenderPermissionInWorld(String world, String permission)
+ 	{
+-		if (!senderIsServer() && !PermissionHandler.getInstance().has(world, sender.getCommandSenderName(), permission))
++		if (!senderIsServer() && !perms.has(world, sender.getCommandSenderName(), permission))
+ 			throw new CommandException("command.generic.permission");
+ 	}
+ 	
+diff --git a/src/main/java/org/ultramine/commands/HandlerBasedCommand.java b/src/main/java/org/ultramine/commands/HandlerBasedCommand.java
+index 3136982..a83abd9 100644
+--- a/src/main/java/org/ultramine/commands/HandlerBasedCommand.java
++++ b/src/main/java/org/ultramine/commands/HandlerBasedCommand.java
+@@ -5,7 +5,8 @@
+ import net.minecraft.entity.player.EntityPlayer;
+ import org.apache.commons.lang3.ArrayUtils;
+ import org.ultramine.commands.syntax.ArgumentsPattern;
+-import org.ultramine.server.PermissionHandler;
++import org.ultramine.core.service.InjectService;
++import org.ultramine.core.permissions.Permissions;
+ 
+ import java.util.ArrayList;
+ import java.util.Arrays;
+@@ -17,6 +18,8 @@
+ 
+ public class HandlerBasedCommand implements IExtendedCommand
+ {
++	@InjectService
++	private static Permissions perms;
+ 	private String name;
+ 	private String usage;
+ 	private String group;
+@@ -95,7 +98,7 @@
+ 	@Override
+ 	public boolean canCommandSenderUseCommand(ICommandSender var1)
+ 	{
+-		return (isUsableFromServer && !(var1 instanceof EntityPlayer)) || PermissionHandler.getInstance().hasAny(var1, permissions);
++		return (isUsableFromServer && !(var1 instanceof EntityPlayer)) || perms.hasAny(var1, permissions);
+ 	}
+ 
+ 	@Override
+diff --git a/src/main/java/org/ultramine/commands/VanillaCommandWrapper.java b/src/main/java/org/ultramine/commands/VanillaCommandWrapper.java
+index 5c4b503..d4cb221 100644
+--- a/src/main/java/org/ultramine/commands/VanillaCommandWrapper.java
++++ b/src/main/java/org/ultramine/commands/VanillaCommandWrapper.java
+@@ -3,12 +3,15 @@
+ import net.minecraft.command.ICommand;
+ import net.minecraft.command.ICommandSender;
+ import net.minecraft.entity.player.EntityPlayer;
+-import org.ultramine.server.PermissionHandler;
++import org.ultramine.core.service.InjectService;
++import org.ultramine.core.permissions.Permissions;
+ 
+ import java.util.List;
+ 
+ public class VanillaCommandWrapper implements IExtendedCommand
+ {
++	@InjectService
++	private static Permissions perms;
+ 	private final ICommand wrappedCommand;
+ 	private final String permission;
+ 	private final String description;
+@@ -49,7 +52,7 @@
+ 	@Override
+ 	public boolean canCommandSenderUseCommand(ICommandSender var1)
+ 	{
+-		return (PermissionHandler.getInstance().has(var1, permission) || !(var1 instanceof EntityPlayer)) && wrappedCommand.canCommandSenderUseCommand(var1);
++		return perms.useVanillaCommandPermissions() ? wrappedCommand.canCommandSenderUseCommand(var1) : perms.has(var1, permission) || !(var1 instanceof EntityPlayer);
+ 	}
+ 
+ 	@Override
+diff --git a/src/main/java/org/ultramine/commands/basic/FastWarpCommand.java b/src/main/java/org/ultramine/commands/basic/FastWarpCommand.java
+index 87e4580..d2ffabb 100644
+--- a/src/main/java/org/ultramine/commands/basic/FastWarpCommand.java
++++ b/src/main/java/org/ultramine/commands/basic/FastWarpCommand.java
+@@ -8,11 +8,14 @@
+ import net.minecraft.server.MinecraftServer;
+ 
+ import org.ultramine.commands.IExtendedCommand;
+-import org.ultramine.server.PermissionHandler;
++import org.ultramine.core.service.InjectService;
+ import org.ultramine.server.Teleporter;
++import org.ultramine.core.permissions.Permissions;
+ 
+ public class FastWarpCommand implements IExtendedCommand
+ {
++	@InjectService
++	private static Permissions perms;
+ 	private final String name;
+ 	
+ 	public FastWarpCommand(String name)
+@@ -47,7 +50,7 @@
+ 	@Override
+ 	public boolean canCommandSenderUseCommand(ICommandSender sender)
+ 	{
+-		return sender instanceof EntityPlayerMP && PermissionHandler.getInstance().has(sender, "command.fastwarp."+name);
++		return sender instanceof EntityPlayerMP && perms.has(sender, "command.fastwarp."+name);
+ 	}
+ 
+ 	@Override
+diff --git a/src/main/java/org/ultramine/commands/basic/VanillaCommands.java b/src/main/java/org/ultramine/commands/basic/VanillaCommands.java
+index 84eb2a4..8fc3e35 100644
+--- a/src/main/java/org/ultramine/commands/basic/VanillaCommands.java
++++ b/src/main/java/org/ultramine/commands/basic/VanillaCommands.java
+@@ -21,12 +21,16 @@
+ import org.ultramine.commands.Command;
+ import org.ultramine.commands.CommandContext;
+ import org.ultramine.commands.IExtendedCommand;
+-import org.ultramine.server.PermissionHandler;
++import org.ultramine.core.service.InjectService;
+ import org.ultramine.server.Teleporter;
+ import org.ultramine.server.util.BasicTypeParser;
++import org.ultramine.core.permissions.Permissions;
+ 
+ public class VanillaCommands
+ {
++	@InjectService
++	private static Permissions perms;
++
+ 	@Command(
+ 			name = "help",
+ 			group = "player",
+@@ -144,7 +148,7 @@
+ 	private static void sendMessage(ICommandSender from, ICommandSender to, String message)
+ 	{
+ 		IChatComponent msg = ForgeHooks.newChatWithLinks(message);
+-		msg.getChatStyle().setColor(BasicTypeParser.parseColor(PermissionHandler.getInstance().getMeta(from, "textcolor")));
++		msg.getChatStyle().setColor(BasicTypeParser.parseColor(perms.getMeta(from, "textcolor")));
+ 		
+ 		from.addChatMessage(new ChatComponentTranslation("command.msg.display.outgoing", to.func_145748_c_(), msg).setChatStyle(new ChatStyle().setColor(GOLD)));
+ 		to.addChatMessage(new ChatComponentTranslation("command.msg.display.incoming", from.func_145748_c_(), msg).setChatStyle(new ChatStyle().setColor(GOLD)));
+diff --git a/src/main/java/org/ultramine/core/permissions/MinecraftPermissions.java b/src/main/java/org/ultramine/core/permissions/MinecraftPermissions.java
+new file mode 100644
+index 0000000..2ca2d04
+--- /dev/null
++++ b/src/main/java/org/ultramine/core/permissions/MinecraftPermissions.java
+@@ -0,0 +1,13 @@
++package org.ultramine.core.permissions;
++
++public final class MinecraftPermissions
++{
++	public static final String OP = "minecraft.op";
++	public static final String COMMAND_NOTIFICATION = "minecraft.cmd_notify";
++	public static final String ALLOW_SPAM = "minecraft.allow_spam";
++	public static final String IGNORE_SPAWN_PROTECTION = "minecraft.ignore_spawn_prot";
++	public static final String IGNORE_WHITE_LIST = "minecraft.ignore_white_list";
++	
++	public static final String SEE_INVISIBLE_PLAYERS = "ability.admin.seeinvisibleplayers";
++	public static final String HIDE_JOIN_MESSAGE = "ability.admin.hidejoinmessage";
++}
+diff --git a/src/main/java/org/ultramine/core/permissions/Permissions.java b/src/main/java/org/ultramine/core/permissions/Permissions.java
+new file mode 100644
+index 0000000..8009c98
+--- /dev/null
++++ b/src/main/java/org/ultramine/core/permissions/Permissions.java
+@@ -0,0 +1,77 @@
++package org.ultramine.core.permissions;
++
++import com.mojang.authlib.GameProfile;
++import net.minecraft.command.ICommandSender;
++import net.minecraft.entity.player.EntityPlayerMP;
++import net.minecraft.server.MinecraftServer;
++import net.minecraft.world.World;
++import org.ultramine.core.service.Service;
++import org.ultramine.server.world.WorldDescriptor;
++
++import javax.annotation.Nonnull;
++
++@Service
++public interface Permissions
++{
++	boolean has(String world, String player, String permission);
++
++	@Nonnull String getMeta(String world, String player, String key);
++
++	default boolean has(String world, GameProfile player, String permission)
++	{
++		return has(world, player.getName(), permission);
++	}
++
++	default boolean has(WorldDescriptor world, GameProfile player, String permission)
++	{
++		return has(world.getName(), player, permission);
++	}
++
++	default boolean has(World world, GameProfile player, String permission)
++	{
++		return has(MinecraftServer.getServer().getMultiWorld().getDescByID(world.provider.dimensionId), player, permission);
++	}
++
++	default boolean has(ICommandSender player, String permission)
++	{
++		return !(player instanceof EntityPlayerMP) || has(player.getEntityWorld(), ((EntityPlayerMP) player).getGameProfile(), permission);
++	}
++
++	default boolean hasAny(ICommandSender player, String... permissions)
++	{
++		if (permissions == null)
++			return true;
++
++		for (String permission : permissions)
++			if (has(player, permission))
++				return true;
++		return false;
++	}
++
++	default @Nonnull String getMeta(String world, GameProfile player, String permission)
++	{
++		return getMeta(world, player.getName(), permission);
++	}
++
++	default @Nonnull String getMeta(WorldDescriptor world, GameProfile player, String permission)
++	{
++		return getMeta(world.getName(), player, permission);
++	}
++
++	default @Nonnull String getMeta(World world, GameProfile player, String permission)
++	{
++		return getMeta(MinecraftServer.getServer().getMultiWorld().getDescByID(world.provider.dimensionId), player, permission);
++	}
++
++	default @Nonnull String getMeta(ICommandSender player, String permission)
++	{
++		if(!(player instanceof EntityPlayerMP))
++			return "";
++		return getMeta(player.getEntityWorld(), ((EntityPlayerMP) player).getGameProfile(), permission);
++	}
++
++	default boolean useVanillaCommandPermissions()
++	{
++		return false;
++	}
++}
+diff --git a/src/main/java/org/ultramine/permission/DummyPermission.java b/src/main/java/org/ultramine/permission/DummyPermission.java
+deleted file mode 100644
+index c59f1d8..0000000
+--- a/src/main/java/org/ultramine/permission/DummyPermission.java
++++ /dev/null
+@@ -1,83 +0,0 @@
+-package org.ultramine.permission;
+-
+-import org.ultramine.permission.internal.AbstractResolver;
+-import org.ultramine.permission.internal.CheckResult;
+-import org.ultramine.permission.internal.MetaResolver;
+-
+-public class DummyPermission implements IPermission
+-{
+-	private String key;
+-
+-	public DummyPermission(String key)
+-	{
+-		this.key = key.toLowerCase();
+-	}
+-
+-	@Override
+-	public String getKey()
+-	{
+-		return key;
+-	}
+-
+-	@Override
+-	public CheckResult check(String key)
+-	{
+-		if (key == null)
+-			return CheckResult.UNRESOLVED;
+-
+-		key = key.toLowerCase();
+-		if (key.equals(getKey()) || "*".equals(getKey()))
+-			return CheckResult.TRUE;
+-
+-		if (getKey().endsWith(".*"))
+-		{
+-			String base = getKey().substring(0, getKey().length() - 3);
+-			if (key.startsWith(base))
+-				return CheckResult.TRUE;
+-		}
+-
+-		return CheckResult.UNRESOLVED;
+-	}
+-
+-	@Override
+-	public String getMeta(String key)
+-	{
+-		return "";
+-	}
+-
+-	@Override
+-	public void mergePermissionsTo(AbstractResolver<Boolean> resolver)
+-	{
+-		resolver.merge(getKey(), (Boolean)true, Integer.MAX_VALUE);
+-	}
+-
+-	@Override
+-	public void mergeMetaTo(MetaResolver resolver)
+-	{
+-	}
+-
+-	@Override
+-	public void subscribe(IDirtyListener listener)
+-	{
+-	}
+-
+-	@Override
+-	public void unsubscribe(IDirtyListener listener)
+-	{
+-	}
+-
+-	@Override
+-	public int hashCode()
+-	{
+-		return getKey().hashCode();
+-	}
+-
+-	@Override
+-	public boolean equals(Object obj)
+-	{
+-		if (obj instanceof IPermission)
+-			return getKey().equals(((IPermission)obj).getKey());
+-
+-		return super.equals(obj);
+-	}
+-}
+diff --git a/src/main/java/org/ultramine/permission/IDirtyListener.java b/src/main/java/org/ultramine/permission/IDirtyListener.java
+deleted file mode 100644
+index 349785b..0000000
+--- a/src/main/java/org/ultramine/permission/IDirtyListener.java
++++ /dev/null
+@@ -1,6 +0,0 @@
+-package org.ultramine.permission;
+-
+-public interface IDirtyListener
+-{
+-	public void makeDirty();
+-}
+diff --git a/src/main/java/org/ultramine/permission/IPermission.java b/src/main/java/org/ultramine/permission/IPermission.java
+deleted file mode 100644
+index f0ff956..0000000
+--- a/src/main/java/org/ultramine/permission/IPermission.java
++++ /dev/null
+@@ -1,18 +0,0 @@
+-package org.ultramine.permission;
+-
+-import org.ultramine.permission.internal.AbstractResolver;
+-import org.ultramine.permission.internal.CheckResult;
+-import org.ultramine.permission.internal.MetaResolver;
+-
+-public interface IPermission
+-{
+-	public String getKey();
+-	public CheckResult check(String key);
+-	public String getMeta(String key);
+-
+-	public void mergePermissionsTo(AbstractResolver<Boolean> resolver);
+-	public void mergeMetaTo(MetaResolver resolver);
+-
+-	public void subscribe(IDirtyListener listener);
+-	public void unsubscribe(IDirtyListener listener);
+-}
+\ No newline at end of file
+diff --git a/src/main/java/org/ultramine/permission/IPermissionContainer.java b/src/main/java/org/ultramine/permission/IPermissionContainer.java
+deleted file mode 100644
+index ee0e17c..0000000
+--- a/src/main/java/org/ultramine/permission/IPermissionContainer.java
++++ /dev/null
+@@ -1,12 +0,0 @@
+-package org.ultramine.permission;
+-
+-import org.ultramine.permission.internal.CheckResult;
+-
+-public interface IPermissionContainer
+-{
+-	String getName();
+-	
+-	CheckResult check(String worldname, String permissionKey);
+-	
+-	String getMeta(String worldname, String key);
+-}
+diff --git a/src/main/java/org/ultramine/permission/IPermissionManager.java b/src/main/java/org/ultramine/permission/IPermissionManager.java
+deleted file mode 100644
+index 2e5c083..0000000
+--- a/src/main/java/org/ultramine/permission/IPermissionManager.java
++++ /dev/null
+@@ -1,39 +0,0 @@
+-package org.ultramine.permission;
+-
+-public interface IPermissionManager
+-{
+-	public static final String GLOBAL_WORLD = "global";
+-	public static final String DEFAULT_GROUP_NAME = "default";
+-
+-	public boolean has(String world, String player, String permission);
+-
+-	public void add(String world, String player, String permission);
+-
+-	public void addToMixin(String mixin, String permission);
+-
+-	public void addToGroup(String group, String world, String permission);
+-
+-	public void remove(String world, String player, String permission);
+-
+-	public void removeFromMixin(String mixin, String permission);
+-
+-	public void removeFromGroup(String group, String world, String permission);
+-
+-	public String getMeta(String world, String player, String key);
+-
+-	public void setMeta(String world, String player, String key, String value);
+-
+-	public void setMixinMeta(String mixin, String key, String value);
+-
+-	public void setGroupMeta(String group, String world, String key, String value);
+-
+-	public void setUserGroup(String user, String group);
+-
+-	public void setGroupInherits(String group, String parent);
+-
+-	public void save();
+-
+-	public void reload();
+-
+-	public PermissionRepository getRepository();
+-}
+\ No newline at end of file
+diff --git a/src/main/java/org/ultramine/permission/MinecraftPermissions.java b/src/main/java/org/ultramine/permission/MinecraftPermissions.java
+deleted file mode 100644
+index c3a074a..0000000
+--- a/src/main/java/org/ultramine/permission/MinecraftPermissions.java
++++ /dev/null
+@@ -1,13 +0,0 @@
+-package org.ultramine.permission;
+-
+-public final class MinecraftPermissions
+-{
+-	public static final String OP = "minecraft.op";
+-	public static final String COMMAND_NOTIFICATION = "minecraft.cmd_notify";
+-	public static final String ALLOW_SPAM = "minecraft.allow_spam";
+-	public static final String IGNORE_SPAWN_PROTECTION = "minecraft.ignore_spawn_prot";
+-	public static final String IGNORE_WHITE_LIST = "minecraft.ignore_white_list";
+-	
+-	public static final String SEE_INVISIBLE_PLAYERS = "ability.admin.seeinvisibleplayers";
+-	public static final String HIDE_JOIN_MESSAGE = "ability.admin.hidejoinmessage";
+-}
+diff --git a/src/main/java/org/ultramine/permission/MixinPermission.java b/src/main/java/org/ultramine/permission/MixinPermission.java
+deleted file mode 100644
+index 94c8a9d..0000000
+--- a/src/main/java/org/ultramine/permission/MixinPermission.java
++++ /dev/null
+@@ -1,102 +0,0 @@
+-package org.ultramine.permission;
+-
+-import org.ultramine.permission.internal.AbstractResolver;
+-import org.ultramine.permission.internal.MetaResolver;
+-import org.ultramine.permission.internal.PermissionHolder;
+-
+-import java.util.ArrayList;
+-import java.util.List;
+-import java.util.Map;
+-
+-public class MixinPermission extends PermissionHolder implements IPermission
+-{
+-	private final String key;
+-	private final List<IDirtyListener> listeners = new ArrayList<IDirtyListener>();
+-	private int priority = Integer.MIN_VALUE;
+-
+-	public MixinPermission(String key)
+-	{
+-		super();
+-		this.key = key.toLowerCase();
+-	}
+-	
+-	public MixinPermission(String key, int priority)
+-	{
+-		this(key);
+-		this.priority = priority;
+-	}
+-
+-	public MixinPermission(String key, Map<String, String> meta)
+-	{
+-		super(meta);
+-		this.key = key.toLowerCase();
+-	}
+-
+-	@Override
+-	public String getKey()
+-	{
+-		return key;
+-	}
+-
+-	@Override
+-	public void mergePermissionsTo(AbstractResolver<Boolean> resolver)
+-	{
+-		resolver.merge(getPermissionResolver(), getPriority());
+-	}
+-
+-	@Override
+-	public void mergeMetaTo(MetaResolver resolver)
+-	{
+-		resolver.merge(getMetaResolver(), getPriority());
+-	}
+-
+-	@Override
+-	public void subscribe(IDirtyListener listener)
+-	{
+-		listeners.add(listener);
+-	}
+-
+-	@Override
+-	public void unsubscribe(IDirtyListener listener)
+-	{
+-		listeners.remove(listener);
+-	}
+-
+-	@Override
+-	public void makeDirty()
+-	{
+-		if (isDirty())
+-			return;
+-
+-		super.makeDirty();
+-		for (IDirtyListener listener : listeners)
+-			listener.makeDirty();
+-	}
+-
+-	@Override
+-	public void calculate()
+-	{
+-		super.calculate();
+-		getPermissionResolver().merge(key, true, Integer.MAX_VALUE);
+-	}
+-
+-	private int getPriority()
+-	{
+-		return priority != Integer.MIN_VALUE ? priority : getMetaResolver().getInt("priority");
+-	}
+-
+-	@Override
+-	public int hashCode()
+-	{
+-		return getKey().hashCode();
+-	}
+-
+-	@Override
+-	public boolean equals(Object obj)
+-	{
+-		if (obj instanceof IPermission)
+-			return getKey().equals(((IPermission) obj).getKey());
+-
+-		return super.equals(obj);
+-	}
+-}
+diff --git a/src/main/java/org/ultramine/permission/NegativePermission.java b/src/main/java/org/ultramine/permission/NegativePermission.java
+deleted file mode 100644
+index e4a7df2..0000000
+--- a/src/main/java/org/ultramine/permission/NegativePermission.java
++++ /dev/null
+@@ -1,52 +0,0 @@
+-package org.ultramine.permission;
+-
+-import org.ultramine.permission.internal.AbstractResolver;
+-import org.ultramine.permission.internal.CheckResult;
+-import org.ultramine.permission.internal.MetaResolver;
+-
+-class NegativePermission extends PermissionRepository.ProxyPermission
+-{
+-	private String key;
+-
+-	public NegativePermission(String key, IPermission permission)
+-	{
+-		super(permission);
+-		this.key = key;
+-	}
+-
+-	@Override
+-	public String getKey()
+-	{
+-		return key;
+-	}
+-
+-	@Override
+-	public CheckResult check(String key)
+-	{
+-		return super.check(key).invert();
+-	}
+-
+-	@Override
+-	public String getMeta(String key)
+-	{
+-		return "";
+-	}
+-
+-	@Override
+-	public void mergePermissionsTo(final AbstractResolver<Boolean> resolver)
+-	{
+-		super.mergePermissionsTo(new AbstractResolver<Boolean>()
+-		{
+-			@Override
+-			public boolean merge(String key, Boolean value, int priority)
+-			{
+-				return resolver.merge(key, !value, priority);
+-			}
+-		});
+-	}
+-
+-	@Override
+-	public void mergeMetaTo(MetaResolver resolver)
+-	{
+-	}
+-}
+diff --git a/src/main/java/org/ultramine/permission/PermissionRepository.java b/src/main/java/org/ultramine/permission/PermissionRepository.java
+deleted file mode 100644
+index 95f121a..0000000
+--- a/src/main/java/org/ultramine/permission/PermissionRepository.java
++++ /dev/null
+@@ -1,241 +0,0 @@
+-package org.ultramine.permission;
+-
+-import org.ultramine.permission.internal.AbstractResolver;
+-import org.ultramine.permission.internal.CheckResult;
+-import org.ultramine.permission.internal.MetaResolver;
+-
+-import java.util.ArrayList;
+-import java.util.HashMap;
+-import java.util.List;
+-import java.util.Map;
+-
+-public class PermissionRepository
+-{
+-	private final Map<String, ProxyPermission> proxyPermissions;
+-	private final Map<String, IPermissionContainer> proxyContainers;
+-
+-	public PermissionRepository()
+-	{
+-		proxyPermissions = new HashMap<String, ProxyPermission>();
+-		proxyContainers = new HashMap<String, IPermissionContainer>();
+-	}
+-
+-	public PermissionRepository(PermissionRepository anotherRepository)
+-	{
+-		proxyPermissions = new HashMap<String, ProxyPermission>(anotherRepository.proxyPermissions);
+-		proxyContainers = new HashMap<String, IPermissionContainer>(anotherRepository.proxyContainers);
+-	}
+-
+-	public ProxyPermission getPermission(String key)
+-	{
+-		key = key.toLowerCase();
+-
+-		ProxyPermission permission = proxyPermissions.get(key);
+-		if (permission == null)
+-		{
+-			if (key.startsWith("^"))
+-				permission = new NegativePermission(key, getPermission(key.substring(1)));
+-
+-			else if (key.endsWith(".*") || key.equals("*"))
+-				permission = new ProxyPermission(new DummyPermission(key));
+-
+-			else
+-				permission = new ProxyPermission(key);
+-
+-			proxyPermissions.put(key, permission);
+-		}
+-
+-		return permission;
+-	}
+-
+-	public ProxyPermission registerPermission(IPermission permission)
+-	{
+-		ProxyPermission proxy = getPermission(permission.getKey());
+-		if (!proxy.isDummy())
+-			throw new IllegalArgumentException("Permission already registered");
+-
+-		if (permission instanceof ProxyPermission)
+-		{
+-			proxyPermissions.put(permission.getKey(), (ProxyPermission)permission);
+-			return (ProxyPermission)permission;
+-		}
+-		else
+-		{
+-			proxy.link(permission);
+-			return proxy;
+-		}
+-	}
+-
+-	public void lockPermissions(String... permissions)
+-	{
+-		for (String permission : permissions)
+-			getPermission(permission).lock();
+-	}
+-	
+-	public IPermissionContainer getContainer(String name)
+-	{
+-		IPermissionContainer container = proxyContainers.get(name);
+-		if(container == null)
+-			proxyContainers.put(name, container = new ProxyContainer(name));
+-		return container;
+-	}
+-	
+-	public void registerContainer(String name, IPermissionContainer container)
+-	{
+-		IPermissionContainer old = proxyContainers.get(name);
+-		if(old == null)
+-			proxyContainers.put(name, container);
+-		else if(old instanceof ProxyContainer)
+-			((ProxyContainer)old).link(container);
+-		else
+-			throw new IllegalArgumentException("Container already registered");
+-			
+-	}
+-
+-	public static class ProxyPermission implements IPermission
+-	{
+-		private IPermission wrappedPermission;
+-		private boolean isDummy;
+-		private List<IDirtyListener> listeners;
+-
+-		public ProxyPermission(String key)
+-		{
+-			this.wrappedPermission = new DummyPermission(key);
+-			this.isDummy = true;
+-			listeners = new ArrayList<IDirtyListener>();
+-		}
+-
+-		public ProxyPermission(IPermission permission)
+-		{
+-			this.wrappedPermission = permission;
+-			this.isDummy = false;
+-		}
+-
+-		@Override
+-		public String getKey()
+-		{
+-			return wrappedPermission.getKey();
+-		}
+-
+-		public IPermission getWrappedPermission()
+-		{
+-			return wrappedPermission;
+-		}
+-
+-		public boolean isDummy()
+-		{
+-			return isDummy;
+-		}
+-
+-		@Override
+-		public CheckResult check(String key)
+-		{
+-			return wrappedPermission.check(key);
+-		}
+-
+-		@Override
+-		public String getMeta(String key)
+-		{
+-			return wrappedPermission.getMeta(key);
+-		}
+-
+-		@Override
+-		public void mergePermissionsTo(AbstractResolver<Boolean> resolver)
+-		{
+-			wrappedPermission.mergePermissionsTo(resolver);
+-		}
+-
+-		@Override
+-		public void mergeMetaTo(MetaResolver resolver)
+-		{
+-			wrappedPermission.mergeMetaTo(resolver);
+-		}
+-
+-		@Override
+-		public void subscribe(IDirtyListener listener)
+-		{
+-			if (isDummy)
+-				listeners.add(listener);
+-			else
+-				wrappedPermission.subscribe(listener);
+-		}
+-
+-		@Override
+-		public void unsubscribe(IDirtyListener listener)
+-		{
+-			if (isDummy)
+-				listeners.remove(listener);
+-			else
+-				wrappedPermission.unsubscribe(listener);
+-		}
+-
+-		private void lock()
+-		{
+-			listeners = null;
+-			isDummy = false;
+-		}
+-
+-		private void link(IPermission permission)
+-		{
+-			wrappedPermission = permission;
+-			for (IDirtyListener listener : listeners)
+-			{
+-				permission.subscribe(listener);
+-				listener.makeDirty();
+-			}
+-			lock();
+-		}
+-
+-		@Override
+-		public int hashCode()
+-		{
+-			return wrappedPermission.hashCode();
+-		}
+-
+-		@Override
+-		public boolean equals(Object obj)
+-		{
+-			return wrappedPermission.equals(obj);
+-		}
+-
+-		@Override
+-		public String toString()
+-		{
+-			return wrappedPermission.toString();
+-		}
+-	}
+-
+-	private static class ProxyContainer implements IPermissionContainer
+-	{
+-		private final String name;
+-		private IPermissionContainer wrappedContainer;
+-		
+-		private ProxyContainer(String name)
+-		{
+-			this.name = name;
+-		}
+-	
+-		@Override
+-		public String getName()
+-		{
+-			return name;
+-		}
+-		
+-		@Override
+-		public CheckResult check(String worldname, String permissionKey)
+-		{
+-			return wrappedContainer != null ? wrappedContainer.check(worldname, permissionKey) : CheckResult.UNRESOLVED;
+-		}
+-		
+-		@Override
+-		public String getMeta(String worldname, String key)
+-		{
+-			return wrappedContainer != null ? wrappedContainer.getMeta(worldname, key) : null;
+-		}
+-	
+-		private void link(IPermissionContainer container)
+-		{
+-			this.wrappedContainer = container;
+-		}
+-	}
+-}
+\ No newline at end of file
+diff --git a/src/main/java/org/ultramine/permission/commands/BasicPermissionCommands.java b/src/main/java/org/ultramine/permission/commands/BasicPermissionCommands.java
+deleted file mode 100644
+index 6ef8afc..0000000
+--- a/src/main/java/org/ultramine/permission/commands/BasicPermissionCommands.java
++++ /dev/null
+@@ -1,176 +0,0 @@
+-package org.ultramine.permission.commands;
+-
+-import org.ultramine.commands.Command;
+-import org.ultramine.commands.CommandContext;
+-import org.ultramine.permission.IPermissionManager;
+-import org.ultramine.server.PermissionHandler;
+-
+-public class BasicPermissionCommands
+-{
+-	@Command(
+-			name = "pconfig",
+-			group = "permissions",
+-			aliases = {"permissions", "pcfg"},
+-			permissions = {"permissions.admin"},
+-			syntax = {"[save reload]"}
+-	)
+-	public static void pcofnig(CommandContext ctx)
+-	{
+-		if (ctx.actionIs("save"))
+-		{
+-			PermissionHandler.getInstance().save();
+-			ctx.notifyAdmins("command.pconfig.success.save");
+-		}
+-		else
+-		{
+-			PermissionHandler.getInstance().reload();
+-			ctx.notifyAdmins("command.pconfig.success.reload");
+-		}
+-	}
+-
+-	@Command(
+-			name = "puser",
+-			group = "permissions",
+-			permissions = {"permissions.admin.user"},
+-			syntax = {
+-					"<player> [group setgroup] <group>",
+-					"<player> [add remove] <permission>...",
+-					"<player> [meta] <pmeta> <%value>",
+-					"<world> <player> [add remove] <permission>...",
+-					"<world> <player> [meta] <pmeta> <%value>"
+-			}
+-	)
+-	public static void puser(CommandContext ctx)
+-	{
+-		String player = ctx.get("player").asString();
+-		String world = ctx.contains("world")
+-				? ctx.get("world").asWorld().getWorldInfo().getWorldName()
+-				: IPermissionManager.GLOBAL_WORLD;
+-
+-		ctx.checkSenderPermissionInWorld(world, "permissions.admin.world");
+-
+-		if (ctx.actionIs("group") || ctx.actionIs("setgroup"))
+-		{
+-			PermissionHandler.getInstance().setUserGroup(player, ctx.get("group").asString());
+-			ctx.sendMessage("command.puser.success.group", player, ctx.get("group").asString());
+-		}
+-		else if (ctx.actionIs("add"))
+-		{
+-			for (CommandContext.Argument arg : ctx.get("permission").asArray())
+-			{
+-				PermissionHandler.getInstance().add(world, player, arg.asString());
+-				ctx.sendMessage("command.puser.success.add", arg.asString(), player, world);
+-			}
+-		}
+-		else if (ctx.actionIs("remove"))
+-		{
+-			for (CommandContext.Argument arg : ctx.get("permission").asArray())
+-			{
+-				PermissionHandler.getInstance().remove(world, player, arg.asString());
+-				ctx.sendMessage("command.puser.success.remove", arg.asString(), player, world);
+-			}
+-		}
+-		else
+-		{
+-			String key = ctx.get("pmeta").asString();
+-			String value = ctx.get("value").asString();
+-
+-			PermissionHandler.getInstance().setMeta(world, player, key, value);
+-			ctx.sendMessage("command.puser.success.meta", key, value, player, world);
+-		}
+-
+-		PermissionHandler.getInstance().save();
+-	}
+-
+-
+-	@Command(
+-			name = "pmixin",
+-			group = "permissions",
+-			permissions = {"permissions.admin.mixin"},
+-			syntax = {
+-					"<mixin> [add remove] <permission>...",
+-					"<mixin> [meta] <pmeta> <%value>"
+-			}
+-	)
+-	public static void pmixin(CommandContext ctx)
+-	{
+-		String mixin = ctx.get("mixin").asString();
+-
+-		if (ctx.actionIs("add"))
+-		{
+-			for (CommandContext.Argument arg : ctx.get("permission").asArray())
+-			{
+-				PermissionHandler.getInstance().addToMixin(mixin, arg.asString());
+-				ctx.sendMessage("command.pmixin.success.add", arg.asString(), mixin);
+-			}
+-		}
+-		else if (ctx.actionIs("remove"))
+-		{
+-			for (CommandContext.Argument arg : ctx.get("permission").asArray())
+-			{
+-				PermissionHandler.getInstance().removeFromMixin(mixin, arg.asString());
+-				ctx.sendMessage("command.pmixin.success.remove", arg.asString(), mixin);
+-			}
+-		}
+-		else
+-		{
+-			String key = ctx.get("key").asString();
+-			String value = ctx.get("value").asString();
+-			PermissionHandler.getInstance().setMixinMeta(mixin, key, value);
+-			ctx.sendMessage("command.pmixin.success.meta", key, value, mixin);
+-		}
+-
+-		PermissionHandler.getInstance().save();
+-	}
+-	
+-	@Command(
+-			name = "pgroup",
+-			group = "permissions",
+-			permissions = {"permissions.admin.group"},
+-			syntax = {
+-					"<group> [parent setparent] <group%parent>",
+-					"<group> [add remove] <permission>...",
+-					"<group> [meta] <pmeta> <%value>",
+-					"<group> <world> [add remove] <permission>...",
+-					"<group> <world> [meta] <pmeta> <%value>"
+-			}
+-	)
+-	public static void pgroup(CommandContext ctx)
+-	{
+-		String group = ctx.get("group").asString();
+-		String world = ctx.contains("world")
+-				? ctx.getServer().getMultiWorld().getNameByID(ctx.get("world").asWorld().provider.dimensionId)
+-				: IPermissionManager.GLOBAL_WORLD;
+-
+-		if (ctx.actionIs("parent") || ctx.actionIs("setparent"))
+-		{
+-			PermissionHandler.getInstance().setUserGroup(group, ctx.get("parent").asString());
+-			ctx.sendMessage("command.pgroup.success.parent", ctx.get("parent").asString(), group);
+-		}
+-		if (ctx.actionIs("add"))
+-		{
+-			for (CommandContext.Argument arg : ctx.get("permission").asArray())
+-			{
+-				PermissionHandler.getInstance().addToGroup(group, world, arg.asString());
+-				ctx.sendMessage("command.pgroup.success.add", arg.asString(), group);
+-			}
+-		}
+-		else if (ctx.actionIs("remove"))
+-		{
+-			for (CommandContext.Argument arg : ctx.get("permission").asArray())
+-			{
+-				PermissionHandler.getInstance().removeFromGroup(group, world, arg.asString());
+-				ctx.sendMessage("command.pgroup.success.remove", arg.asString(), group);
+-			}
+-		}
+-		else
+-		{
+-			String key = ctx.get("key").asString();
+-			String value = ctx.get("value").asString();
+-			PermissionHandler.getInstance().setGroupMeta(group, world, key, value);
+-			ctx.sendMessage("command.pgroup.success.meta", key, value, group);
+-		}
+-
+-		PermissionHandler.getInstance().save();
+-	}
+-}
+diff --git a/src/main/java/org/ultramine/permission/internal/AbstractResolver.java b/src/main/java/org/ultramine/permission/internal/AbstractResolver.java
+deleted file mode 100644
+index 1d5fd6f..0000000
+--- a/src/main/java/org/ultramine/permission/internal/AbstractResolver.java
++++ /dev/null
+@@ -1,27 +0,0 @@
+-package org.ultramine.permission.internal;
+-
+-import java.util.Map;
+-
+-public abstract class AbstractResolver<T>
+-{
+-	protected Map<String, T> getValues()
+-	{
+-		return null;
+-	}
+-	
+-	public final void merge(AbstractResolver<T> anotherResolver, int priority)
+-	{
+-		if (anotherResolver != null)
+-			merge(anotherResolver.getValues(), priority);
+-	}
+-
+-	public final void merge(Map<String, T> newValues, int priority)
+-	{
+-		for (Map.Entry<String, T> entry : newValues.entrySet())
+-			merge(entry.getKey(), entry.getValue(), priority);
+-
+-	}
+-
+-	public abstract boolean merge(String key, T value, int priority);
+-	
+-}
+diff --git a/src/main/java/org/ultramine/permission/internal/CheckResult.java b/src/main/java/org/ultramine/permission/internal/CheckResult.java
+deleted file mode 100644
+index eca8663..0000000
+--- a/src/main/java/org/ultramine/permission/internal/CheckResult.java
++++ /dev/null
+@@ -1,29 +0,0 @@
+-package org.ultramine.permission.internal;
+-
+-public enum CheckResult
+-{
+-	TRUE, FALSE, UNRESOLVED;
+-
+-	public static CheckResult fromBoolean(boolean value)
+-	{
+-		return value ? TRUE : FALSE;
+-	}
+-
+-	public boolean asBoolean()
+-	{
+-		return this == TRUE;
+-	}
+-
+-	public CheckResult invert()
+-	{
+-		switch (this)
+-		{
+-			case TRUE:
+-				return FALSE;
+-			case FALSE:
+-				return TRUE;
+-			default:
+-				return UNRESOLVED;
+-		}
+-	}
+-}
+\ No newline at end of file
+diff --git a/src/main/java/org/ultramine/permission/internal/ClientPermissionManager.java b/src/main/java/org/ultramine/permission/internal/ClientPermissionManager.java
+deleted file mode 100644
+index 737cfa1..0000000
+--- a/src/main/java/org/ultramine/permission/internal/ClientPermissionManager.java
++++ /dev/null
+@@ -1,120 +0,0 @@
+-package org.ultramine.permission.internal;
+-
+-import cpw.mods.fml.relauncher.Side;
+-import cpw.mods.fml.relauncher.SideOnly;
+-
+-import org.ultramine.permission.MixinPermission;
+-import org.ultramine.permission.IPermissionManager;
+-import org.ultramine.permission.PermissionRepository;
+-
+-import java.util.HashMap;
+-import java.util.Map;
+-
+-@SideOnly(Side.CLIENT)
+-public class ClientPermissionManager implements IPermissionManager
+-{
+-	private PermissionRepository permissionRepository;
+-	private Map<String, MixinPermission> groups;
+-	private String owner;
+-
+-	public ClientPermissionManager(String owner, PermissionRepository permissionRepository)
+-	{
+-		this.permissionRepository = permissionRepository;
+-		this.groups = new HashMap<String, MixinPermission>();
+-		this.owner = owner;
+-	}
+-
+-	@Override
+-	public boolean has(String world, String player, String permission)
+-	{
+-		return player.equalsIgnoreCase(owner);
+-	}
+-
+-	@Override
+-	public void add(String world, String player, String permission)
+-	{
+-		
+-	}
+-
+-	@Override
+-	public void addToMixin(String group, String permission)
+-	{
+-		
+-	}
+-
+-	@Override
+-	public void addToGroup(String group, String world, String permission)
+-	{
+-		
+-	}
+-
+-	@Override
+-	public void remove(String world, String player, String permission)
+-	{
+-		
+-	}
+-
+-	@Override
+-	public void removeFromMixin(String group, String permission)
+-	{
+-		
+-	}
+-
+-	@Override
+-	public void removeFromGroup(String group, String world, String permission)
+-	{
+-		
+-	}
+-
+-	@Override
+-	public String getMeta(String world, String player, String key)
+-	{
+-		return "";
+-	}
+-
+-	@Override
+-	public void setMeta(String world, String player, String key, String value)
+-	{
+-		
+-	}
+-
+-	@Override
+-	public void setMixinMeta(String group, String key, String value)
+-	{
+-		
+-	}
+-
+-	@Override
+-	public void setGroupMeta(String group, String world, String key, String value)
+-	{
+-		
+-	}
+-
+-	@Override
+-	public void setUserGroup(String user, String group)
+-	{
+-		
+-	}
+-
+-	@Override
+-	public void setGroupInherits(String group, String parent)
+-	{
+-		
+-	}
+-
+-	@Override
+-	public void save()
+-	{
+-	}
+-
+-	@Override
+-	public void reload()
+-	{
+-	}
+-
+-	@Override
+-	public PermissionRepository getRepository()
+-	{
+-		return permissionRepository;
+-	}
+-}
+diff --git a/src/main/java/org/ultramine/permission/internal/MetaHolder.java b/src/main/java/org/ultramine/permission/internal/MetaHolder.java
+deleted file mode 100644
+index 77a2560..0000000
+--- a/src/main/java/org/ultramine/permission/internal/MetaHolder.java
++++ /dev/null
+@@ -1,56 +0,0 @@
+-package org.ultramine.permission.internal;
+-
+-import java.util.LinkedHashMap;
+-import java.util.Map;
+-
+-public abstract class MetaHolder
+-{
+-	private Map<String, String> innerMeta;
+-
+-	public MetaHolder()
+-	{
+-		innerMeta = new LinkedHashMap<String, String>();
+-	}
+-
+-	public MetaHolder(Map<String, String> meta)
+-	{
+-		setInnerMeta(meta);
+-	}
+-
+-	public String getMeta(String key)
+-	{
+-		return getMetaResolver().getString(key);
+-	}
+-
+-	public void setMeta(String key, String value)
+-	{
+-		innerMeta.put(key, value);
+-	}
+-
+-	public void removeMeta(String key)
+-	{
+-		innerMeta.remove(key);
+-	}
+-
+-	public void clearMeta()
+-	{
+-		innerMeta.clear();
+-	}
+-
+-	public Map<String, String> getInnerMeta()
+-	{
+-		return new LinkedHashMap<String, String>(innerMeta);
+-	}
+-
+-	public void setInnerMeta(Map<String, String> meta)
+-	{
+-		innerMeta = new LinkedHashMap<String, String>(meta);
+-	}
+-
+-	protected abstract MetaResolver getMetaResolver();
+-
+-	protected void mergeInnerMeta()
+-	{
+-		getMetaResolver().merge(innerMeta, Integer.MAX_VALUE);
+-	}
+-}
+diff --git a/src/main/java/org/ultramine/permission/internal/MetaResolver.java b/src/main/java/org/ultramine/permission/internal/MetaResolver.java
+deleted file mode 100644
+index b5ed74b..0000000
+--- a/src/main/java/org/ultramine/permission/internal/MetaResolver.java
++++ /dev/null
+@@ -1,32 +0,0 @@
+-package org.ultramine.permission.internal;
+-
+-public class MetaResolver extends Resolver<String>
+-{
+-	public static final MetaResolver BLANK_RESOLVER = new MetaResolver();
+-
+-	public MetaResolver()
+-	{
+-		super();
+-	}
+-
+-	public String getString(String key)
+-	{
+-		return values.get(key);
+-	}
+-
+-	public int getInt(String key)
+-	{
+-		if (values.containsKey(key))
+-		{
+-			try
+-			{
+-				return Integer.parseInt(values.get(key));
+-			}
+-			catch (Exception ignored)
+-			{
+-			}
+-		}
+-
+-		return 0;
+-	}
+-}
+diff --git a/src/main/java/org/ultramine/permission/internal/PermUser.java b/src/main/java/org/ultramine/permission/internal/PermUser.java
+deleted file mode 100644
+index 25588c5..0000000
+--- a/src/main/java/org/ultramine/permission/internal/PermUser.java
++++ /dev/null
+@@ -1,131 +0,0 @@
+-package org.ultramine.permission.internal;
+-
+-import java.util.LinkedHashMap;
+-import java.util.Map;
+-
+-import org.ultramine.permission.IPermission;
+-import org.ultramine.permission.IPermissionContainer;
+-import org.ultramine.permission.IPermissionManager;
+-import org.ultramine.permission.MixinPermission;
+-
+-public class PermUser implements IPermissionContainer
+-{
+-	private final String name;
+-	private final MixinPermission global = new MixinPermission("global_world_mixin", -1);
+-	private final Map<String, PermissionHolder> worlds = new LinkedHashMap<String, PermissionHolder>();
+-	private IPermissionContainer parentContainer;
+-	
+-	public PermUser(String name)
+-	{
+-		this.name = name;
+-		worlds.put(IPermissionManager.GLOBAL_WORLD, global);
+-	}
+-	
+-	@Override
+-	public String getName()
+-	{
+-		return name;
+-	}
+-	
+-	public void setParent(IPermissionContainer parentContainer)
+-	{
+-		this.parentContainer = parentContainer;
+-	}
+-	
+-	public String getParentName()
+-	{
+-		return parentContainer != null ? parentContainer.getName() : "";
+-	}
+-	
+-	public boolean checkUserPermission(String worldname, String permissionKey)
+-	{
+-		return check(worldname, permissionKey).asBoolean();
+-	}
+-	
+-	public CheckResult check(String worldname, String permissionKey)
+-	{
+-		CheckResult result = CheckResult.UNRESOLVED;
+-
+-		PermissionHolder world = worlds.get(worldname);
+-		if (world == null)
+-			world = global;
+-
+-		result = world.check(permissionKey);
+-
+-		if (result == CheckResult.UNRESOLVED && parentContainer != null)
+-			result = parentContainer.check(worldname, permissionKey);
+-
+-		return result;
+-	}
+-	
+-	@Override
+-	public String getMeta(String worldname, String key)
+-	{
+-		String result = null;
+-
+-		PermissionHolder world = worlds.get(worldname);
+-		if (world == null)
+-			world = global;
+-
+-		result = world.getMeta(key);
+-
+-		if (result == null && parentContainer != null)
+-			result = parentContainer.getMeta(worldname, key);
+-
+-		return result;
+-	}
+-	
+-	public PermissionHolder getGlobalHolder()
+-	{
+-		return global;
+-	}
+-	
+-	public PermissionHolder getOrCreateWorldHolder(String worldname)
+-	{
+-		PermissionHolder holder = worlds.get(worldname);
+-		if(holder == null)
+-		{
+-			holder = new PermissionHolder();
+-			holder.addPermission(global);
+-			worlds.put(worldname, holder);
+-		}
+-		return holder;
+-	}
+-	
+-	public void addPermission(String worldname, IPermission permission)
+-	{
+-		getOrCreateWorldHolder(worldname).addPermission(permission);
+-	}
+-
+-	public void removePermission(String worldname, String key)
+-	{
+-		PermissionHolder holder = worlds.get(worldname);
+-		if(holder != null)
+-			holder.removePermission(key);
+-	}
+-	
+-	public void setMeta(String worldname, String key, String value)
+-	{
+-		getOrCreateWorldHolder(worldname).setMeta(key, value);
+-	}
+-
+-	public void clearAll()
+-	{
+-		global.clearPermissions();
+-		global.clearMeta();
+-		for(PermissionHolder holder : worlds.values())
+-		{
+-			holder.clearPermissions();
+-			holder.clearMeta();
+-		}
+-		worlds.clear();
+-		worlds.put(IPermissionManager.GLOBAL_WORLD, global);
+-	}
+-	
+-	public Map<String, PermissionHolder> getInnerWorlds()
+-	{
+-		Map<String, PermissionHolder> map = new LinkedHashMap<String, PermissionHolder>(worlds);
+-		map.remove(IPermissionManager.GLOBAL_WORLD);
+-		return map;
+-	}
+-}
+diff --git a/src/main/java/org/ultramine/permission/internal/PermissionHolder.java b/src/main/java/org/ultramine/permission/internal/PermissionHolder.java
+deleted file mode 100644
+index 038ba5b..0000000
+--- a/src/main/java/org/ultramine/permission/internal/PermissionHolder.java
++++ /dev/null
+@@ -1,149 +0,0 @@
+-package org.ultramine.permission.internal;
+-
+-import org.ultramine.permission.IDirtyListener;
+-import org.ultramine.permission.IPermission;
+-
+-import java.util.ArrayList;
+-import java.util.LinkedHashMap;
+-import java.util.List;
+-import java.util.Map;
+-
+-public class PermissionHolder extends MetaHolder implements IDirtyListener
+-{
+-	private boolean dirty;
+-
+-	private Map<String, IPermission> permissions = new LinkedHashMap<String, IPermission>();
+-	private PermissionResolver permissionResolver = new PermissionResolver();
+-	private MetaResolver metaResolver = new MetaResolver();
+-
+-	public PermissionHolder()
+-	{
+-		super();
+-		this.dirty = false;
+-	}
+-
+-	public PermissionHolder(Map<String, String> meta)
+-	{
+-		super(meta);
+-		this.dirty = true;
+-	}
+-
+-	public CheckResult check(String key)
+-	{
+-		return getPermissionResolver().check(key);
+-	}
+-
+-	public void addPermission(IPermission permission)
+-	{
+-		if (permissions.containsKey(permission.getKey()))
+-			return;
+-
+-		permissions.put(permission.getKey(), permission);
+-		permission.subscribe(this);
+-
+-		makeDirty();
+-	}
+-
+-	public void removePermission(IPermission permission)
+-	{
+-		removePermission(permission.getKey());
+-	}
+-
+-	public void removePermission(String key)
+-	{
+-		if (!permissions.containsKey(key))
+-			return;
+-
+-		IPermission permission = permissions.remove(key);
+-		permission.unsubscribe(this);
+-
+-		makeDirty();
+-	}
+-
+-	public void clearPermissions()
+-	{
+-		for (IPermission permission : permissions.values())
+-			permission.unsubscribe(this);
+-
+-		permissions.clear();
+-		makeDirty();
+-	}
+-
+-	public List<String> getInnerPermissions()
+-	{
+-		return new ArrayList<String>(permissions.keySet());
+-	}
+-
+-	public boolean isDirty()
+-	{
+-		return dirty;
+-	}
+-
+-	@Override
+-	public void makeDirty()
+-	{
+-		dirty = true;
+-	}
+-
+-	@Override
+-	public void setMeta(String key, String value)
+-	{
+-		super.setMeta(key, value);
+-		makeDirty();
+-	}
+-
+-	@Override
+-	public void removeMeta(String key)
+-	{
+-		super.removeMeta(key);
+-		makeDirty();
+-	}
+-	
+-	public void setInnerMeta(Map<String, String> meta)
+-	{
+-		super.setInnerMeta(meta);
+-		makeDirty();
+-	}
+-
+-	@Override
+-	public void clearMeta()
+-	{
+-		super.clearMeta();
+-		makeDirty();
+-	}
+-
+-	public void calculate()
+-	{
+-		if (!isDirty())
+-			return;
+-		dirty = false;
+-
+-		permissionResolver.clear();
+-		metaResolver.clear();
+-
+-		for (IPermission permission : permissions.values())
+-		{
+-			permission.mergePermissionsTo(permissionResolver);
+-			permission.mergeMetaTo(metaResolver);
+-		}
+-
+-		mergeInnerMeta();
+-	}
+-
+-	protected PermissionResolver getPermissionResolver()
+-	{
+-		if (isDirty())
+-			calculate();
+-
+-		return permissionResolver;
+-	}
+-
+-	@Override
+-	protected MetaResolver getMetaResolver()
+-	{
+-		if (isDirty())
+-			calculate();
+-
+-		return metaResolver;
+-	}
+-}
+\ No newline at end of file
+diff --git a/src/main/java/org/ultramine/permission/internal/PermissionResolver.java b/src/main/java/org/ultramine/permission/internal/PermissionResolver.java
+deleted file mode 100644
+index a70b76b..0000000
+--- a/src/main/java/org/ultramine/permission/internal/PermissionResolver.java
++++ /dev/null
+@@ -1,62 +0,0 @@
+-package org.ultramine.permission.internal;
+-
+-import java.util.*;
+-
+-public class PermissionResolver extends Resolver<Boolean>
+-{
+-	private final SortedMap<String, Boolean> wildcards = new TreeMap<String, Boolean>(Collections.reverseOrder());
+-
+-	public static PermissionResolver createInverted(PermissionResolver anotherResolver)
+-	{
+-		PermissionResolver resolver = new PermissionResolver();
+-		for (Map.Entry<String, Boolean> entry : anotherResolver.values.entrySet())
+-			resolver.merge(entry.getKey(), !entry.getValue(), anotherResolver.priorities.get(entry.getKey()));
+-
+-		return resolver;
+-	}
+-
+-	public static PermissionResolver createForKey(String key, int priority)
+-	{
+-		PermissionResolver resolver = new PermissionResolver();
+-		resolver.merge(key, true, priority);
+-		return resolver;
+-	}
+-
+-	public CheckResult check(String key)
+-	{
+-		if (key == null)
+-			return CheckResult.UNRESOLVED;
+-
+-		Boolean val = values.get(key);
+-		if (val != null)
+-			return CheckResult.fromBoolean(val);
+-
+-		if (wildcards.size() > 0)
+-		{
+-			for (Map.Entry<String, Boolean> entry : wildcards.entrySet())
+-			{
+-				if (key.startsWith(entry.getKey()))
+-					return CheckResult.fromBoolean(entry.getValue());
+-			}
+-		}
+-
+-		return CheckResult.UNRESOLVED;
+-	}
+-
+-	@Override
+-	public void clear()
+-	{
+-		super.clear();
+-		wildcards.clear();
+-	}
+-
+-	@Override
+-	public boolean merge(String key, Boolean value, int priority)
+-	{
+-		boolean result = super.merge(key, value, priority);
+-		if (result && (key.endsWith(".*") || key.equals("*")))
+-			wildcards.put(key.substring(0, key.length() - 1), value);
+-
+-		return result;
+-	}
+-}
+\ No newline at end of file
+diff --git a/src/main/java/org/ultramine/permission/internal/Resolver.java b/src/main/java/org/ultramine/permission/internal/Resolver.java
+deleted file mode 100644
+index f90eaef..0000000
+--- a/src/main/java/org/ultramine/permission/internal/Resolver.java
++++ /dev/null
+@@ -1,38 +0,0 @@
+-package org.ultramine.permission.internal;
+-
+-import gnu.trove.map.hash.TObjectIntHashMap;
+-
+-import java.util.HashMap;
+-import java.util.Map;
+-
+-public class Resolver<T> extends AbstractResolver<T>
+-{
+-	protected final Map<String, T> values = new HashMap<String, T>();
+-	protected final TObjectIntHashMap<String> priorities = new TObjectIntHashMap<String>();
+-
+-	public Resolver()
+-	{
+-	}
+-
+-	public void clear()
+-	{
+-		values.clear();
+-		priorities.clear();
+-	}
+-
+-	protected Map<String, T> getValues()
+-	{
+-		return values;
+-	}
+-
+-	public boolean merge(String key, T value, int priority)
+-	{
+-		if (!priorities.containsKey(key) || priorities.get(key) < priority)
+-		{
+-			values.put(key, value);
+-			priorities.put(key, priority);
+-			return true;
+-		}
+-		return false;
+-	}
+-}
+diff --git a/src/main/java/org/ultramine/permission/internal/ServerPermissionManager.java b/src/main/java/org/ultramine/permission/internal/ServerPermissionManager.java
+deleted file mode 100644
+index e3fd6b2..0000000
+--- a/src/main/java/org/ultramine/permission/internal/ServerPermissionManager.java
++++ /dev/null
+@@ -1,386 +0,0 @@
+-package org.ultramine.permission.internal;
+-
+-import cpw.mods.fml.relauncher.Side;
+-import cpw.mods.fml.relauncher.SideOnly;
+-
+-import org.ultramine.permission.MixinPermission;
+-import org.apache.commons.lang3.StringUtils;
+-import org.ultramine.permission.IPermissionManager;
+-import org.ultramine.permission.PermissionRepository;
+-import org.ultramine.server.util.YamlConfigProvider;
+-
+-import java.io.File;
+-import java.util.ArrayList;
+-import java.util.HashMap;
+-import java.util.LinkedHashMap;
+-import java.util.List;
+-import java.util.Map;
+-
+-@SideOnly(Side.SERVER)
+-public class ServerPermissionManager implements IPermissionManager
+-{
+-	private static final String GROUPS_CONFIG = "groups.yml";
+-	private static final String MIXINS_CONFIG = "mixins.yml";
+-	private static final String MIXIN_PREFIX = "mixin.";
+-
+-	private final File configDir;
+-	private final PermissionRepository permissionRepository;
+-	private final Map<String, MixinPermission> mixins = new LinkedHashMap<String, MixinPermission>();
+-	private final Map<String, PermUser> groups = new LinkedHashMap<String, PermUser>();
+-	private final Map<String, PermUser> users = new LinkedHashMap<String, PermUser>();
+-	private final PermUser defaultGroup;
+-
+-	public ServerPermissionManager(File configDir, PermissionRepository permissionRepository)
+-	{
+-		this.configDir = new File(configDir, "permissions");
+-		if (!this.configDir.exists())
+-			this.configDir.mkdir();
+-
+-		this.permissionRepository = permissionRepository;
+-		defaultGroup = getOrCreateGroup(DEFAULT_GROUP_NAME);
+-	}
+-
+-	@Override
+-	public PermissionRepository getRepository()
+-	{
+-		return permissionRepository;
+-	}
+-
+-	@Override
+-	public boolean has(String world, String player, String permission)
+-	{
+-		PermUser user = users.get(player.toLowerCase());
+-		if(user == null)
+-			user = defaultGroup;
+-		return user.checkUserPermission(world, permission);
+-	}
+-
+-	@Override
+-	public void add(String world, String player, String permission)
+-	{
+-		getOrCreateUser(player).addPermission(world, permissionRepository.getPermission(permission));
+-	}
+-
+-	@Override
+-	public void addToMixin(String group, String permission)
+-	{
+-		getOrCreateMixin(group).addPermission(permissionRepository.getPermission(permission));
+-	}
+-	
+-	@Override
+-	public void addToGroup(String group, String world, String permission)
+-	{
+-		getOrCreateGroup(group).addPermission(world, permissionRepository.getPermission(permission));
+-	}
+-
+-	@Override
+-	public void remove(String world, String player, String permission)
+-	{
+-		PermUser user = users.get(player.toLowerCase());
+-		if (user == null)
+-			return;
+-
+-		user.removePermission(world, permission);
+-	}
+-
+-	@Override
+-	public void removeFromMixin(String mixin, String permission)
+-	{
+-		MixinPermission groupObj = mixins.get(fixMixinKey(mixin));
+-		if (groupObj == null)
+-			return;
+-
+-		groupObj.removePermission(permission);
+-	}
+-	
+-	@Override
+-	public void removeFromGroup(String group, String world, String permission)
+-	{
+-		getOrCreateGroup(group).removePermission(world, permission);
+-	}
+-
+-	@Override
+-	public String getMeta(String world, String player, String key)
+-	{
+-		PermUser user  = users.get(player.toLowerCase());
+-		if (user == null)
+-			user = defaultGroup;
+-
+-		String meta = user.getMeta(world, key);
+-		return meta != null ? meta : "";
+-	}
+-
+-	@Override
+-	public void setMixinMeta(String group, String key, String value)
+-	{
+-		getOrCreateMixin(group).setMeta(key, value);
+-	}
+-	
+-	@Override
+-	public void setGroupMeta(String group, String world, String key, String value)
+-	{
+-		getOrCreateGroup(group).setMeta(world, key, value);
+-	}
+-	
+-	@Override
+-	public void setMeta(String world, String player, String key, String value)
+-	{
+-		getOrCreateUser(player).setMeta(world, key, value);
+-	}
+-
+-	@Override
+-	public void setUserGroup(String user, String group)
+-	{
+-		getOrCreateUser(user).setParent(permissionRepository.getContainer(group));
+-	}
+-
+-	@Override
+-	public void setGroupInherits(String group, String parent)
+-	{
+-		getOrCreateGroup(group).setParent(permissionRepository.getContainer(parent));
+-	}
+-
+-	@Override
+-	public void save()
+-	{
+-		saveMixins();
+-		saveGroups();
+-		saveUsers();
+-	}
+-
+-	@Override
+-	public void reload()
+-	{
+-		reloadMixins();
+-		reloadGroups();
+-		reloadUsers();
+-	}
+-
+-	public void reloadMixins()
+-	{
+-		File file = mixinsFile();
+-		if(file.exists())
+-		{
+-			for (MixinPermission mixin : mixins.values())
+-			{
+-				mixin.clearPermissions();
+-				mixin.clearMeta();
+-			}
+-
+-			MixinData data = YamlConfigProvider.getOrCreateConfig(file, MixinData.class);
+-			if (data == null || data.mixins == null)
+-				return;
+-
+-			for (Map.Entry<String, HolderData> groupData : data.mixins.entrySet())
+-			{
+-				MixinPermission mixin = getOrCreateMixin(groupData.getKey());
+-				mixin.setInnerMeta(groupData.getValue().meta);
+-
+-				for (String pKey : groupData.getValue().permissions)
+-					mixin.addPermission(permissionRepository.getPermission(pKey));
+-			}	
+-		}
+-		else
+-		{
+-			saveMixins();
+-		}
+-	}
+-
+-	public void saveMixins()
+-	{
+-		MixinData data = new MixinData();
+-
+-		for (Map.Entry<String, MixinPermission> group : mixins.entrySet())
+-			data.mixins.put(group.getKey(), new HolderData(group.getValue()));
+-
+-		YamlConfigProvider.saveConfig(mixinsFile(), data);
+-	}
+-
+-	public void reloadGroups()
+-	{
+-		File file = groupsFile();
+-		if(file.exists())
+-		{
+-			for(PermUser group : groups.values())
+-				group.clearAll();
+-
+-			GroupsData data = YamlConfigProvider.getOrCreateConfig(file, GroupsData.class);
+-			for(Map.Entry<String, UserData> groupData : data.groups.entrySet())
+-				fillContainer(getOrCreateGroup(groupData.getKey()), groupData.getValue());
+-		}
+-		else
+-		{
+-			saveGroups();
+-		}
+-	}
+-	
+-	public void saveGroups()
+-	{
+-		GroupsData data = new GroupsData();
+-
+-		for (PermUser group : groups.values())
+-			data.groups.put(group.getName(), serializeContainer(group));
+-
+-		YamlConfigProvider.saveConfig(groupsFile(), data);
+-	}
+-	
+-	public void saveUsers()
+-	{
+-		UsersData data = new UsersData();
+-
+-		for (PermUser user : users.values())
+-			data.users.put(user.getName(), serializeContainer(user));
+-
+-		YamlConfigProvider.saveConfig(usersFile(), data);
+-	}
+-
+-	public void reloadUsers()
+-	{
+-		for(PermUser user : users.values())
+-			user.clearAll();
+-		users.clear();
+-
+-		UsersData data = YamlConfigProvider.getOrCreateConfig(usersFile(), UsersData.class);
+-		for(Map.Entry<String, UserData> userData : data.users.entrySet())
+-		{
+-			PermUser container = new PermUser(userData.getKey());
+-			fillContainer(container, userData.getValue());
+-			users.put(userData.getKey().toLowerCase(), container);
+-		}
+-	}
+-
+-	private void fillContainer(PermUser container, UserData data)
+-	{
+-		if(!StringUtils.isEmpty(data.inherits))
+-			container.setParent(permissionRepository.getContainer(data.inherits));
+-
+-		fillHolder(container.getGlobalHolder(), data.global);
+-		for(Map.Entry<String, HolderData> worldData : data.worlds.entrySet())
+-			fillHolder(container.getOrCreateWorldHolder(worldData.getKey()), worldData.getValue());
+-	}
+-
+-	private void fillHolder(PermissionHolder holder, HolderData data)
+-	{
+-		holder.setInnerMeta(data.meta);
+-		for (String pKey : data.permissions)
+-			holder.addPermission(permissionRepository.getPermission(pKey));
+-	}
+-	
+-	private UserData serializeContainer(PermUser group)
+-	{
+-		UserData user = new UserData();
+-		user.inherits = group.getParentName();
+-		user.global = new HolderData(group.getGlobalHolder());
+-		for(Map.Entry<String, PermissionHolder> world : group.getInnerWorlds().entrySet())
+-			user.worlds.put(world.getKey(), new HolderData(world.getValue()));
+-		return user;
+-	}
+-
+-	public static String fixMixinKey(String key)
+-	{
+-		if (key.startsWith(MIXIN_PREFIX))
+-			return key;
+-		else
+-			return MIXIN_PREFIX + key;
+-	}
+-
+-	private MixinPermission getOrCreateMixin(String name)
+-	{
+-		String groupKey = fixMixinKey(name);
+-		MixinPermission mixin = mixins.get(groupKey);
+-		if (mixin == null)
+-		{
+-			mixin = new MixinPermission(groupKey);
+-			permissionRepository.registerPermission(mixin);
+-			mixins.put(groupKey, mixin);
+-		}
+-
+-		return mixin;
+-	}
+-
+-	private PermUser getOrCreateGroup(String name)
+-	{
+-		name = name.toLowerCase();
+-		PermUser container = groups.get(name);
+-		if(container == null)
+-		{
+-			container = new PermUser(name);
+-			permissionRepository.registerContainer(name, container);
+-			groups.put(name, container);
+-		}
+-		return container;
+-	}
+-
+-	private PermUser getOrCreateUser(String name)
+-	{
+-		name = name.toLowerCase();
+-		PermUser container = users.get(name);
+-		if(container == null)
+-		{
+-			container = new PermUser(name);
+-			container.setParent(defaultGroup);
+-			users.put(name, container);
+-		}
+-		return container;
+-	}
+-
+-	private File groupsFile()
+-	{
+-		return new File(configDir, GROUPS_CONFIG);
+-	}
+-
+-	private File usersFile()
+-	{
+-		return new File(configDir, "users.yml");
+-	}
+-
+-	private File mixinsFile()
+-	{
+-		return new File(configDir, MIXINS_CONFIG);
+-	}
+-
+-	public static class HolderData
+-	{
+-		public Map<String, String> meta;
+-		public List<String> permissions;
+-
+-		public HolderData()
+-		{
+-			meta = new HashMap<String, String>();
+-			permissions = new ArrayList<String>();
+-		}
+-
+-		public HolderData(PermissionHolder holder)
+-		{
+-			meta = holder.getInnerMeta();
+-			permissions = holder.getInnerPermissions();
+-		}
+-
+-		public boolean isEmpty()
+-		{
+-			return permissions.isEmpty() && meta.isEmpty();
+-		}
+-	}
+-
+-	public static class UserData
+-	{
+-		public String inherits = "";
+-		public HolderData global = new HolderData();
+-		public Map<String, HolderData> worlds = new LinkedHashMap<String, HolderData>();
+-	}
+-
+-	public static class GroupsData
+-	{
+-		public Map<String, UserData> groups = new LinkedHashMap<String, UserData>();
+-	}
+-
+-	public static class UsersData
+-	{
+-		public Map<String, UserData> users = new LinkedHashMap<String, UserData>();
+-	}
+-
+-	public static class MixinData
+-	{
+-		public Map<String, HolderData> mixins = new LinkedHashMap<String, HolderData>();
+-	}
+-}
+diff --git a/src/main/java/org/ultramine/permission/internal/SyncServerExecutorImpl.java b/src/main/java/org/ultramine/permission/internal/SyncServerExecutorImpl.java
+deleted file mode 100644
+index 54d0db2..0000000
+--- a/src/main/java/org/ultramine/permission/internal/SyncServerExecutorImpl.java
++++ /dev/null
+@@ -1,49 +0,0 @@
+-package org.ultramine.permission.internal;
+-
+-import com.google.common.collect.Queues;
+-import cpw.mods.fml.common.FMLCommonHandler;
+-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+-import cpw.mods.fml.common.gameevent.TickEvent;
+-import org.ultramine.server.util.SyncServerExecutor;
+-
+-import java.util.Queue;
+-
+-public class SyncServerExecutorImpl extends SyncServerExecutor
+-{
+-	private final Queue<Runnable> queue = Queues.newConcurrentLinkedQueue();
+-
+-	public void register()
+-	{
+-		FMLCommonHandler.instance().bus().register(this);
+-	}
+-
+-	public void unregister()
+-	{
+-		FMLCommonHandler.instance().bus().unregister(this);
+-		queue.clear();
+-	}
+-
+-	@SubscribeEvent
+-	public void onServerTick(TickEvent.ServerTickEvent e)
+-	{
+-		if(e.phase == TickEvent.Phase.END)
+-		{
+-			for(Runnable toRun; (toRun = queue.poll()) != null;)
+-				toRun.run();
+-		}
+-	}
+-
+-	public boolean processOneTask()
+-	{
+-		Runnable toRun = queue.poll();
+-		if(toRun != null)
+-			toRun.run();
+-		return toRun != null;
+-	}
+-
+-	@Override
+-	public void execute(Runnable toRun)
+-	{
+-		queue.add(toRun);
+-	}
+-}
+diff --git a/src/main/java/org/ultramine/server/PermissionHandler.java b/src/main/java/org/ultramine/server/PermissionHandler.java
+deleted file mode 100644
+index e0dfe36..0000000
+--- a/src/main/java/org/ultramine/server/PermissionHandler.java
++++ /dev/null
+@@ -1,189 +0,0 @@
+-package org.ultramine.server;
+-
+-import net.minecraft.command.ICommandSender;
+-import net.minecraft.server.MinecraftServer;
+-
+-import org.ultramine.permission.MixinPermission;
+-import org.ultramine.permission.IPermissionManager;
+-import org.ultramine.permission.PermissionRepository;
+-import org.ultramine.permission.internal.ServerPermissionManager;
+-
+-public class PermissionHandler implements IPermissionManager
+-{
+-	private static PermissionHandler instance = new PermissionHandler();
+-
+-	public static PermissionHandler getInstance()
+-	{
+-		return instance;
+-	}
+-
+-	private IPermissionManager getHandler()
+-	{
+-		return MinecraftServer.getServer().getPermissionManager();
+-	}
+-
+-	@Override
+-	public boolean has(String world, String player, String permission)
+-	{
+-		return getHandler().has(world, player, permission);
+-	}
+-
+-	public boolean has(ICommandSender player, String permission)
+-	{
+-		return has(worldName(player), player.getCommandSenderName(), permission);
+-	}
+-
+-	public boolean hasGlobally(String player, String permission)
+-	{
+-		return has(ServerPermissionManager.GLOBAL_WORLD, player, permission);
+-	}
+-
+-	public boolean hasGlobally(ICommandSender player, String permission)
+-	{
+-		return has(ServerPermissionManager.GLOBAL_WORLD, player.getCommandSenderName(), permission);
+-	}
+-
+-	public boolean has(ICommandSender player, String... permissions)
+-	{
+-		if (permissions == null)
+-			return true;
+-
+-		for (String permission : permissions)
+-			if (!has(player, permission)) return false;
+-		return true;
+-	}
+-
+-	public boolean hasAny(ICommandSender player, String... permissions)
+-	{
+-		if (permissions == null)
+-			return true;
+-
+-		for (String permission : permissions)
+-			if (has(player, permission)) return true;
+-		return false;
+-	}
+-
+-	@Override
+-	public void add(String world, String player, String permission)
+-	{
+-		getHandler().add(world, player, permission);
+-	}
+-
+-	public void add(ICommandSender player, String permission)
+-	{
+-		add(worldName(player), player.getCommandSenderName(), permission);
+-	}
+-
+-	@Override
+-	public void addToMixin(String group, String permission)
+-	{
+-		getHandler().addToMixin(group, permission);
+-	}
+-	
+-	@Override
+-	public void addToGroup(String group, String world, String permission)
+-	{
+-		getHandler().addToGroup(group, world, permission);
+-	}
+-
+-	@Override
+-	public void remove(String world, String player, String permission)
+-	{
+-		getHandler().remove(world, player, permission);
+-	}
+-
+-	public void remove(ICommandSender player, String permission)
+-	{
+-		remove(worldName(player), player.getCommandSenderName(), permission);
+-	}
+-
+-	@Override
+-	public void removeFromMixin(String group, String permission)
+-	{
+-		getHandler().removeFromMixin(group, permission);
+-	}
+-	
+-	@Override
+-	public void removeFromGroup(String group, String world, String permission)
+-	{
+-		getHandler().removeFromGroup(group, world, permission);
+-	}
+-
+-	@Override
+-	public String getMeta(String world, String player, String key)
+-	{
+-		return getHandler().getMeta(world, player, key);
+-	}
+-
+-	public String getMeta(ICommandSender player, String key)
+-	{
+-		return getMeta(worldName(player), player.getCommandSenderName(), key);
+-	}
+-
+-	@Override
+-	public void setMeta(String world, String player, String key, String value)
+-	{
+-		getHandler().setMeta(world, player, key, value);
+-	}
+-
+-	@Override
+-	public void setMixinMeta(String group, String key, String value)
+-	{
+-		getHandler().setMixinMeta(group, key, value);
+-	}
+-	
+-	@Override
+-	public void setGroupMeta(String group, String world, String key, String value)
+-	{
+-		getHandler().setGroupMeta(group, world, key, value);
+-	}
+-
+-	public void setMeta(ICommandSender player, String key, String value)
+-	{
+-		setMeta(worldName(player), player.getCommandSenderName(), key, value);
+-	}
+-	
+-	@Override
+-	public void setUserGroup(String user, String group)
+-	{
+-		getHandler().setUserGroup(user, group);
+-	}
+-
+-	@Override
+-	public void setGroupInherits(String group, String parent)
+-	{
+-		getHandler().setGroupInherits(group, parent);
+-	}
+-
+-	@Override
+-	public void save()
+-	{
+-		getHandler().save();
+-	}
+-
+-	@Override
+-	public void reload()
+-	{
+-		getHandler().reload();
+-	}
+-
+-	@Override
+-	public PermissionRepository getRepository()
+-	{
+-		return getHandler().getRepository();
+-	}
+-
+-	public MixinPermission createGroup(String name, String... permissions)
+-	{
+-		MixinPermission group = new MixinPermission(name);
+-		for (String permission : permissions)
+-			group.addPermission(getRepository().getPermission(permission));
+-		getRepository().registerPermission(group);
+-		return group;
+-	}
+-
+-	private String worldName(ICommandSender player)
+-	{
+-		return MinecraftServer.getServer().getMultiWorld().getNameByID(player.getEntityWorld().provider.dimensionId);
+-	}
+-}
+diff --git a/src/main/java/org/ultramine/server/UltramineServerModContainer.java b/src/main/java/org/ultramine/server/UltramineServerModContainer.java
+index 6e81a3a..6155ba0 100644
+--- a/src/main/java/org/ultramine/server/UltramineServerModContainer.java
++++ b/src/main/java/org/ultramine/server/UltramineServerModContainer.java
+@@ -16,18 +16,18 @@
+ import org.ultramine.commands.basic.TechCommands;
+ import org.ultramine.commands.basic.VanillaCommands;
+ import org.ultramine.commands.syntax.DefaultCompleters;
++import org.ultramine.core.service.InjectService;
++import org.ultramine.core.service.ServiceManager;
+ import org.ultramine.economy.EconomyCommands;
+-import org.ultramine.permission.IPermissionManager;
+-import org.ultramine.permission.MinecraftPermissions;
+-import org.ultramine.permission.commands.BasicPermissionCommands;
+-import org.ultramine.permission.internal.SyncServerExecutorImpl;
+ import org.ultramine.server.chunk.ChunkGenerationQueue;
+ import org.ultramine.server.chunk.ChunkProfiler;
+ import org.ultramine.server.data.Databases;
+ import org.ultramine.server.data.ServerDataLoader;
+ import org.ultramine.server.data.player.PlayerCoreData;
+ import org.ultramine.server.event.ForgeModIdMappingEvent;
++import org.ultramine.server.internal.SyncServerExecutorImpl;
+ import org.ultramine.server.internal.UMEventHandler;
++import org.ultramine.server.internal.OpBasedPermissions;
+ import org.ultramine.server.tools.ButtonCommand;
+ import org.ultramine.server.tools.ItemBlocker;
+ import org.ultramine.server.tools.WarpProtection;
+@@ -54,10 +54,15 @@
+ import cpw.mods.fml.common.network.NetworkRegistry;
+ import cpw.mods.fml.relauncher.Side;
+ import cpw.mods.fml.relauncher.SideOnly;
++import org.ultramine.core.permissions.Permissions;
+ 
+ public class UltramineServerModContainer extends DummyModContainer
+ {
+ 	private static UltramineServerModContainer instance;
++	@InjectService
++	private static ServiceManager services;
++	@InjectService
++	private static Permissions perms;
+ 	
+ 	private LoadController controller;
+ 	@SideOnly(Side.SERVER)
+@@ -105,6 +110,11 @@
+ 				Databases.init();
+ 				MinecraftServer.getServer().getMultiWorld().preloadConfigs();
+ 				ConfigurationHandler.postWorldDescsLoad();
++				OpBasedPermissions vanPerms = new OpBasedPermissions();
++				vanPerms.addDefault("command.vanilla.help");
++				vanPerms.addDefault("command.vanilla.msg");
++				vanPerms.addDefault("command.vanilla.reply");
++				services.register(Permissions.class, vanPerms, 0);
+ 			}
+ 		}
+ 		catch (Throwable t)
+@@ -169,7 +179,6 @@
+ 		{
+ 			e.getServer().getConfigurationManager().getDataLoader().registerPlayerDataExt(PlayerCoreData.class, "core");
+ 			e.registerArgumentHandlers(DefaultCompleters.class);
+-			e.registerCommands(BasicPermissionCommands.class);
+ 			e.registerCommands(VanillaCommands.class);
+ 			e.registerCommands(BasicCommands.class);
+ 			e.registerCommands(TechCommands.class);
+@@ -177,30 +186,6 @@
+ 			e.registerCommands(EconomyCommands.class);
+ 			e.registerCommands(OpenInvCommands.class);
+ 			
+-			for(String perm : new String[]{
+-					"command.vanilla.help",
+-					"command.vanilla.msg",
+-					"command.vanilla.me",
+-					"command.vanilla.kill",
+-					"command.vanilla.list",
+-					"ability.player.useblock",
+-					"ability.player.useitem",
+-					"ability.player.blockplace",
+-					"ability.player.blockbreak",
+-					"ability.player.attack",
+-					"ability.player.chat",
+-					"command.fastwarp.spawn",
+-					})
+-			{
+-				e.getPermissionHandler().addToGroup(IPermissionManager.DEFAULT_GROUP_NAME, IPermissionManager.GLOBAL_WORLD, perm);
+-			}
+-			e.getPermissionHandler().setGroupMeta(IPermissionManager.DEFAULT_GROUP_NAME, IPermissionManager.GLOBAL_WORLD, "color", "7");
+-			e.getPermissionHandler().addToGroup("admin", IPermissionManager.GLOBAL_WORLD, "*");
+-			e.getPermissionHandler().addToGroup("admin", IPermissionManager.GLOBAL_WORLD, "^"+MinecraftPermissions.HIDE_JOIN_MESSAGE);
+-			e.getPermissionHandler().setGroupMeta("admin", IPermissionManager.GLOBAL_WORLD, "color", "c");
+-			e.getPermissionHandler().setGroupMeta("admin", IPermissionManager.GLOBAL_WORLD, "tablistcolor", "c");
+-			e.getPermissionHandler().setGroupMeta("admin", IPermissionManager.GLOBAL_WORLD, "prefix", "&4[admin] ");
+-			
+ 			if(e.getSide().isServer())
+ 			{
+ 				buttonCommand.load(e);
+@@ -220,7 +205,6 @@
+ 	{
+ 		try
+ 		{
+-			PermissionHandler.getInstance().reload();
+ 			ServerDataLoader loader = MinecraftServer.getServer().getConfigurationManager().getDataLoader();
+ 			CommandRegistry reg = ((CommandHandler)MinecraftServer.getServer().getCommandManager()).getRegistry();
+ 			loader.loadCache();
+diff --git a/src/main/java/org/ultramine/server/internal/OpBasedPermissions.java b/src/main/java/org/ultramine/server/internal/OpBasedPermissions.java
+new file mode 100644
+index 0000000..5f2877d
+--- /dev/null
++++ b/src/main/java/org/ultramine/server/internal/OpBasedPermissions.java
+@@ -0,0 +1,52 @@
++package org.ultramine.server.internal;
++
++import com.mojang.authlib.GameProfile;
++import net.minecraft.server.MinecraftServer;
++import org.ultramine.core.permissions.Permissions;
++
++import javax.annotation.Nonnull;
++import java.util.HashSet;
++import java.util.Set;
++
++public class OpBasedPermissions implements Permissions
++{
++	private final Set<String> defaultPermissions = new HashSet<>();
++
++	public void addDefault(String permission)
++	{
++		defaultPermissions.add(permission);
++	}
++
++	private boolean hasDefault(String permission)
++	{
++		return defaultPermissions.contains(permission);
++	}
++
++	@Override
++	public boolean has(String world, String player, String permission)
++	{
++		return hasDefault(permission);
++	}
++
++	public boolean has(String world, GameProfile player, String permission)
++	{
++		return MinecraftServer.getServer().getConfigurationManager().func_152596_g(player) || hasDefault(permission);
++	}
++
++	@Override
++	public @Nonnull String getMeta(String world, String player, String key)
++	{
++		return "";
++	}
++
++	@Override
++	public @Nonnull String getMeta(String world, GameProfile player, String key)
++	{
++		return "";
++	}
++
++	public boolean useVanillaCommandPermissions()
++	{
++		return true;
++	}
++}
+diff --git a/src/main/java/org/ultramine/server/internal/SyncServerExecutorImpl.java b/src/main/java/org/ultramine/server/internal/SyncServerExecutorImpl.java
+new file mode 100644
+index 0000000..c0c6c3d
+--- /dev/null
++++ b/src/main/java/org/ultramine/server/internal/SyncServerExecutorImpl.java
+@@ -0,0 +1,49 @@
++package org.ultramine.server.internal;
++
++import com.google.common.collect.Queues;
++import cpw.mods.fml.common.FMLCommonHandler;
++import cpw.mods.fml.common.eventhandler.SubscribeEvent;
++import cpw.mods.fml.common.gameevent.TickEvent;
++import org.ultramine.server.util.SyncServerExecutor;
++
++import java.util.Queue;
++
++public class SyncServerExecutorImpl extends SyncServerExecutor
++{
++	private final Queue<Runnable> queue = Queues.newConcurrentLinkedQueue();
++
++	public void register()
++	{
++		FMLCommonHandler.instance().bus().register(this);
++	}
++
++	public void unregister()
++	{
++		FMLCommonHandler.instance().bus().unregister(this);
++		queue.clear();
++	}
++
++	@SubscribeEvent
++	public void onServerTick(TickEvent.ServerTickEvent e)
++	{
++		if(e.phase == TickEvent.Phase.END)
++		{
++			for(Runnable toRun; (toRun = queue.poll()) != null;)
++				toRun.run();
++		}
++	}
++
++	public boolean processOneTask()
++	{
++		Runnable toRun = queue.poll();
++		if(toRun != null)
++			toRun.run();
++		return toRun != null;
++	}
++
++	@Override
++	public void execute(Runnable toRun)
++	{
++		queue.add(toRun);
++	}
++}
+diff --git a/src/main/java/org/ultramine/server/internal/UMEventHandler.java b/src/main/java/org/ultramine/server/internal/UMEventHandler.java
+index 0b2c352..3dc4ed9 100644
+--- a/src/main/java/org/ultramine/server/internal/UMEventHandler.java
++++ b/src/main/java/org/ultramine/server/internal/UMEventHandler.java
+@@ -2,10 +2,10 @@
+ 
+ import net.minecraft.util.DamageSource;
+ import org.ultramine.commands.basic.GenWorldCommand;
++import org.ultramine.core.service.InjectService;
+ import org.ultramine.economy.CurrencyRegistry;
+ import org.ultramine.economy.PlayerHoldingsEvent;
+ import org.ultramine.server.ConfigurationHandler;
+-import org.ultramine.server.PermissionHandler;
+ import org.ultramine.server.Teleporter;
+ import org.ultramine.server.UltramineServerConfig.ToolsConf.AutoBroacastConf;
+ import org.ultramine.server.UltramineServerConfig.ToolsConf.AutoDebugInfoConf;
+@@ -48,9 +48,13 @@
+ import net.minecraftforge.event.entity.player.PlayerEvent;
+ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+ import net.minecraftforge.event.world.BlockEvent;
++import org.ultramine.core.permissions.Permissions;
+ 
+ public class UMEventHandler
+ {
++	@InjectService
++	private static Permissions perms;
++	
+ 	@SideOnly(Side.SERVER)
+ 	@SubscribeEvent(priority = EventPriority.HIGH)
+ 	public void checkChatPermission(ServerChatEvent e)
+@@ -58,7 +62,7 @@
+ 		if(e.player.playerNetServerHandler == null || e.player.getData() == null)
+ 			return;
+ 		PlayerCoreData data = e.player.getData().core();
+-		if(!PermissionHandler.getInstance().has(e.player, "ability.player.chat"))
++		if(!perms.has(e.player, "ability.player.chat"))
+ 		{
+ 			e.setCanceled(true);
+ 			e.player.addChatMessage(new ChatComponentTranslation("ultramine.ability.chat").setChatStyle(new ChatStyle().setColor(EnumChatFormatting.RED)));
+@@ -89,14 +93,14 @@
+ 	{
+ 		if(e.player.playerNetServerHandler == null || e.player.getData() == null)
+ 			return;
+-		String prefix = PermissionHandler.getInstance().getMeta(e.player, "prefix").replace('&', '\u00A7');
+-		String postfix = PermissionHandler.getInstance().getMeta(e.player, "postfix").replace('&', '\u00A7');
++		String prefix = perms.getMeta(e.player, "prefix").replace('&', '\u00A7');
++		String postfix = perms.getMeta(e.player, "postfix").replace('&', '\u00A7');
+ 		
+ 		ChatComponentStyle username = (ChatComponentStyle) e.player.func_145748_c_();
+ 		IChatComponent msg = ForgeHooks.newChatWithLinks(e.message);
+ 		
+-		username.getChatStyle().setColor(BasicTypeParser.parseColor(PermissionHandler.getInstance().getMeta(e.player, "color")));
+-		EnumChatFormatting color = BasicTypeParser.parseColor(PermissionHandler.getInstance().getMeta(e.player, "textcolor"));
++		username.getChatStyle().setColor(BasicTypeParser.parseColor(perms.getMeta(e.player, "color")));
++		EnumChatFormatting color = BasicTypeParser.parseColor(perms.getMeta(e.player, "textcolor"));
+ 		msg.getChatStyle().setColor(color != null ? color : EnumChatFormatting.WHITE);
+ 		
+ 		e.component = new ChatComponentTranslation("%s%s%s\u00A77: %s", prefix, username, postfix, msg);
+@@ -168,7 +172,7 @@
+ 				
+ 				server.addChatMessage(full);
+ 				for(EntityPlayerMP player : GenericIterableFactory.newCastingIterable(server.getConfigurationManager().playerEntityList, EntityPlayerMP.class))
+-					if(PermissionHandler.getInstance().has(player, "show.debuginfo"))
++					if(perms.has(player, "show.debuginfo"))
+ 						player.addChatMessage(full);
+ 			}
+ 			
+@@ -250,7 +254,7 @@
+ 	{
+ 		if(!e.getPlayer().isEntityPlayerMP() || ((EntityPlayerMP)e.getPlayer()).playerNetServerHandler == null)
+ 			return;
+-		if(!PermissionHandler.getInstance().has(e.getPlayer(), "ability.player.blockbreak"))
++		if(!perms.has(e.getPlayer(), "ability.player.blockbreak"))
+ 		{
+ 			e.setCanceled(true);
+ 			e.getPlayer().addChatMessage(new ChatComponentTranslation("ultramine.ability.blockbreak").setChatStyle(new ChatStyle().setColor(EnumChatFormatting.RED)));
+@@ -263,7 +267,7 @@
+ 	{
+ 		if(!e.player.isEntityPlayerMP() || ((EntityPlayerMP)e.player).playerNetServerHandler == null)
+ 			return;
+-		if(!PermissionHandler.getInstance().has(e.player, "ability.player.blockplace"))
++		if(!perms.has(e.player, "ability.player.blockplace"))
+ 		{
+ 			e.setCanceled(true);
+ 			e.player.addChatMessage(new ChatComponentTranslation("ultramine.ability.blockplace").setChatStyle(new ChatStyle().setColor(EnumChatFormatting.RED)));
+@@ -276,13 +280,13 @@
+ 	{
+ 		if(!e.entityPlayer.isEntityPlayerMP() || ((EntityPlayerMP)e.entityPlayer).playerNetServerHandler == null)
+ 			return;
+-		if(!PermissionHandler.getInstance().has(e.entityPlayer, "ability.player.useitem"))
++		if(!perms.has(e.entityPlayer, "ability.player.useitem"))
+ 		{
+ 			e.useItem = Event.Result.DENY;
+ 			if(e.entityPlayer.inventory.getCurrentItem() != null)
+ 				e.entityPlayer.addChatMessage(new ChatComponentTranslation("ultramine.ability.useitem").setChatStyle(new ChatStyle().setColor(EnumChatFormatting.RED)));
+ 		}
+-		if(!PermissionHandler.getInstance().has(e.entityPlayer, "ability.player.useblock"))
++		if(!perms.has(e.entityPlayer, "ability.player.useblock"))
+ 		{
+ 			e.useBlock = Event.Result.DENY;
+ 			e.entityPlayer.addChatMessage(new ChatComponentTranslation("ultramine.ability.useblock").setChatStyle(new ChatStyle().setColor(EnumChatFormatting.RED)));
+@@ -302,7 +306,7 @@
+ 			EntityPlayerMP player = (EntityPlayerMP)attacker;
+ 			if(player.playerNetServerHandler == null)
+ 				return;
+-			if(!PermissionHandler.getInstance().has(player, "ability.player.attack"))
++			if(!perms.has(player, "ability.player.attack"))
+ 			{
+ 				e.setCanceled(true);
+ 				player.addChatMessage(new ChatComponentTranslation("ultramine.ability.attack").setChatStyle(new ChatStyle().setColor(EnumChatFormatting.RED)));
+@@ -336,7 +340,7 @@
+ 	{
+ 		if(e.damageSource == DamageSource.command)
+ 			e.setDeathMessage(null);
+-		if(e.damageSource == DamageSource.outOfWorld || PermissionHandler.getInstance().has(e.entityPlayer, "ability.admin.keepinventory"))
++		if(e.damageSource == DamageSource.outOfWorld || perms.has(e.entityPlayer, "ability.admin.keepinventory"))
+ 			e.setKeepInventory(true);
+ 	}
+ }
+diff --git a/src/main/java/org/ultramine/server/internal/UMHooks.java b/src/main/java/org/ultramine/server/internal/UMHooks.java
+index 34bed4d..8fb5c10 100644
+--- a/src/main/java/org/ultramine/server/internal/UMHooks.java
++++ b/src/main/java/org/ultramine/server/internal/UMHooks.java
+@@ -20,7 +20,6 @@
+ import net.minecraft.world.chunk.Chunk;
+ import org.apache.logging.log4j.LogManager;
+ import org.apache.logging.log4j.Logger;
+-import org.ultramine.permission.internal.SyncServerExecutorImpl;
+ import org.ultramine.server.chunk.ChunkGenerationQueue;
+ import org.ultramine.server.event.WorldEventProxy;
+ import org.ultramine.server.event.WorldUpdateObject;
+diff --git a/src/main/java/org/ultramine/server/tools/ButtonCommand.java b/src/main/java/org/ultramine/server/tools/ButtonCommand.java
+index 76a9ac0..863f3ce 100644
+--- a/src/main/java/org/ultramine/server/tools/ButtonCommand.java
++++ b/src/main/java/org/ultramine/server/tools/ButtonCommand.java
+@@ -11,7 +11,6 @@
+ import org.ultramine.commands.Command;
+ import org.ultramine.commands.CommandContext;
+ import org.ultramine.server.ConfigurationHandler;
+-import org.ultramine.server.PermissionHandler;
+ import org.ultramine.server.chunk.ChunkHash;
+ import org.ultramine.server.event.SetBlockEvent;
+ import org.ultramine.server.util.MinecraftUtil;
+@@ -171,7 +170,7 @@
+ 		if(bt != null)
+ 		{
+ 			e.setCanceled(true);
+-			if(bt.permission == null || PermissionHandler.getInstance().has(e.entityPlayer, bt.permission))
++			if(bt.permission == null || ((EntityPlayerMP) e.entityPlayer).hasPermission(bt.permission))
+ 			{
+ 				for(String cmd : bt.commands)
+ 					server.getCommandManager().executeCommand(server, cmd.replace("@p", e.entityPlayer.getGameProfile().getName()));
+diff --git a/src/main/java/org/ultramine/server/tools/WarpProtection.java b/src/main/java/org/ultramine/server/tools/WarpProtection.java
+index 3384c83..366cc45 100644
+--- a/src/main/java/org/ultramine/server/tools/WarpProtection.java
++++ b/src/main/java/org/ultramine/server/tools/WarpProtection.java
+@@ -10,7 +10,6 @@
+ import net.minecraftforge.event.world.BlockEvent;
+ 
+ import org.ultramine.server.ConfigurationHandler;
+-import org.ultramine.server.PermissionHandler;
+ import org.ultramine.server.UltramineServerConfig.ToolsConf.WarpProtectionEntry;
+ import org.ultramine.server.util.WarpLocation;
+ 
+@@ -34,7 +33,7 @@
+ 	{
+ 		if(!e.getPlayer().isEntityPlayerMP() || ((EntityPlayerMP)e.getPlayer()).playerNetServerHandler == null)
+ 			return;
+-		if(!PermissionHandler.getInstance().has(e.getPlayer(), "ability.admin.breakprivate"))
++		if(!((EntityPlayerMP) e.getPlayer()).hasPermission("ability.admin.breakprivate"))
+ 		{
+ 			for(WarpProtectionEntry warpConf : ConfigurationHandler.getServerConfig().tools.warpProtection)
+ 			{
+@@ -51,7 +50,7 @@
+ 	@SubscribeEvent(priority = EventPriority.HIGHEST)
+ 	public void onPlayerInteractEvent(PlayerInteractEvent e)
+ 	{
+-		if(!PermissionHandler.getInstance().has(e.entityPlayer, "ability.admin.breakprivate"))
++		if(!((EntityPlayerMP) e.entityPlayer).hasPermission("ability.admin.breakprivate"))
+ 		{
+ 			for(WarpProtectionEntry warpConf : ConfigurationHandler.getServerConfig().tools.warpProtection)
+ 			{
+diff --git a/src/main/java/org/ultramine/server/util/GlobalExecutors.java b/src/main/java/org/ultramine/server/util/GlobalExecutors.java
+index 46175b3..dc08c9e 100644
+--- a/src/main/java/org/ultramine/server/util/GlobalExecutors.java
++++ b/src/main/java/org/ultramine/server/util/GlobalExecutors.java
+@@ -1,6 +1,5 @@
+ package org.ultramine.server.util;
+ 
+-import java.util.concurrent.Executor;
+ import java.util.concurrent.ExecutorService;
+ import java.util.concurrent.Executors;
+ import java.util.concurrent.SynchronousQueue;
+@@ -8,7 +7,7 @@
+ import java.util.concurrent.TimeUnit;
+ 
+ import com.google.common.util.concurrent.ThreadFactoryBuilder;
+-import org.ultramine.permission.internal.SyncServerExecutorImpl;
++import org.ultramine.server.internal.SyncServerExecutorImpl;
+ 
+ public class GlobalExecutors
+ {
+diff --git a/src/main/resources/assets/ultramine/lang/en_US.lang b/src/main/resources/assets/ultramine/lang/en_US.lang
+index b7d9550..710caf8 100644
+--- a/src/main/resources/assets/ultramine/lang/en_US.lang
++++ b/src/main/resources/assets/ultramine/lang/en_US.lang
+@@ -77,32 +77,6 @@
+ 
+ command.say.server=Server
+ 
+-# Permissions
+-command.pconfig.usage=/pconfig <save|reload>
+-command.pconfig.description=Save or reload all permissions configs
+-command.pconfig.success.save=Permissions are saved
+-command.pconfig.success.reload=Permissions are reloaded
+-
+-command.pmixin.usage=/pmixin <mixin> <add|remove> <permissions ...> OR /pmixin <mixin> meta <key> <value>
+-command.pmixin.description=Add or remove permissions to specified mixin
+-command.pmixin.success.add=Add permission <%s> to mixin <%s>
+-command.pmixin.success.remove=Remove permission <%s> from mixin <%s>
+-command.pmixin.success.meta=Set meta <%s> to <%s> for mixin <%s>
+-
+-command.puser.usage=/puser [world] <player> <add|remove> <permissions ...> OR /puser [world] <player> meta <key> <value>
+-command.puser.description=Add/remove permissions OR set meta for user in world (current is default)
+-command.puser.success.group=Player <%s> added to group <%s>
+-command.puser.success.add=Add permission <%s> to user <%s> in world <%s>
+-command.puser.success.remove=Remove permission <%s> from user <%s> in world <%s>
+-command.puser.success.meta=Set meta <%s> to <%s> for user <%s> in world <%s>
+-
+-command.pgroup.usage=/pgroup <group> <add|remove> <permissions ...> OR /pgroup <group> meta <key> <value>
+-command.pgroup.description=Add/remove permissions OR set meta for group
+-command.pgroup.success.parent=Set parent <%s> for group <%s>
+-command.pgroup.success.add=Add permission <%s> to group <%s>
+-command.pgroup.success.remove=Remove permission <%s> from group <%s>
+-command.pgroup.success.meta=Set meta <%s> to <%s> for group <%s>
+-
+ #Economy commands
+ economy.fail.currency=Specified currency is not exists
+ economy.fail.negativeamount=Amount must be greater than zero
+diff --git a/src/main/resources/assets/ultramine/lang/ru_RU.lang b/src/main/resources/assets/ultramine/lang/ru_RU.lang
+index 56f6de5..ad3a9fd 100644
+--- a/src/main/resources/assets/ultramine/lang/ru_RU.lang
++++ b/src/main/resources/assets/ultramine/lang/ru_RU.lang
+@@ -77,32 +77,6 @@
+ 
+ command.say.server=Сервер
+ 
+-# Permissions
+-command.pconfig.usage=/pconfig <save|reload>
+-command.pconfig.description=Save or reload all permissions configs
+-command.pconfig.success.save=Permissions are saved
+-command.pconfig.success.reload=Permissions are reloaded
+-
+-command.pmixin.usage=/pmixin <mixin> <add|remove> <permissions ...> OR /pmixin <mixin> meta <key> <value>
+-command.pmixin.description=Add or remove permissions to specified mixin
+-command.pmixin.success.add=Add permission <%s> to mixin <%s>
+-command.pmixin.success.remove=Remove permission <%s> from mixin <%s>
+-command.pmixin.success.meta=Set meta <%s> to <%s> for mixin <%s>
+-
+-command.puser.usage=/puser [world] <player> <add|remove> <permissions ...> OR /puser [world] <player> meta <key> <value>
+-command.puser.description=Add/remove permissions OR set meta for user in world (current is default)
+-command.puser.success.group=Player <%s> added to group <%s>
+-command.puser.success.add=Add permission <%s> to user <%s> in world <%s>
+-command.puser.success.remove=Remove permission <%s> from user <%s> in world <%s>
+-command.puser.success.meta=Set meta <%s> to <%s> for user <%s> in world <%s>
+-
+-command.pgroup.usage=/pgroup <group> <add|remove> <permissions ...> OR /pgroup <group> meta <key> <value>
+-command.pgroup.description=Add/remove permissions OR set meta for group
+-command.pgroup.success.parent=Set parent <%s> for group <%s>
+-command.pgroup.success.add=Add permission <%s> to group <%s>
+-command.pgroup.success.remove=Remove permission <%s> from group <%s>
+-command.pgroup.success.meta=Set meta <%s> to <%s> for group <%s>
+-
+ #Economy commands
+ economy.fail.currency=Указанная валюта не существует
+ economy.fail.negativeamount=Сумма должна быть больше нуля
