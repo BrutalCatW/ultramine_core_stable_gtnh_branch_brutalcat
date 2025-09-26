@@ -18,14 +18,20 @@ import org.ultramine.commands.basic.OpenInvCommands;
 import org.ultramine.commands.basic.TechCommands;
 
 import org.ultramine.commands.syntax.DefaultCompleters;
+import org.ultramine.core.economy.service.DefaultHoldingsProvider;
+import org.ultramine.core.economy.service.Economy;
+import org.ultramine.core.economy.service.EconomyRegistry;
 import org.ultramine.core.service.InjectService;
 import org.ultramine.core.service.ServiceManager;
-import org.ultramine.economy.EconomyCommands;
+
 import org.ultramine.server.chunk.ChunkGenerationQueue;
 import org.ultramine.server.chunk.ChunkProfiler;
 import org.ultramine.server.data.Databases;
 import org.ultramine.server.data.ServerDataLoader;
 import org.ultramine.server.data.player.PlayerCoreData;
+import org.ultramine.server.economy.UMIntegratedHoldingsProvider;
+import org.ultramine.server.economy.UMEconomy;
+import org.ultramine.server.economy.UMEconomyRegistry;
 import org.ultramine.server.event.ForgeModIdMappingEvent;
 import org.ultramine.server.internal.SyncServerExecutorImpl;
 import org.ultramine.server.internal.UMEventHandler;
@@ -61,10 +67,9 @@ import org.ultramine.core.permissions.Permissions;
 public class UltramineServerModContainer extends DummyModContainer
 {
 	private static UltramineServerModContainer instance;
-	@InjectService
-	private static ServiceManager services;
-	@InjectService
-	private static Permissions perms;
+	@InjectService private static ServiceManager services;
+	@InjectService private static Permissions perms;
+	@InjectService private static EconomyRegistry economyRegistry;
 	
 	private LoadController controller;
 	@SideOnly(Side.SERVER)
@@ -118,6 +123,9 @@ public class UltramineServerModContainer extends DummyModContainer
 				ConfigurationHandler.postWorldDescsLoad();
 				OpBasedPermissions vanPerms = new OpBasedPermissions();
 				services.register(Permissions.class, vanPerms, 0);
+				services.register(EconomyRegistry.class, new UMEconomyRegistry(), 0);
+				services.register(Economy.class, new UMEconomy(), 0);
+				services.register(DefaultHoldingsProvider.class, new UMIntegratedHoldingsProvider(), 0);
 			}
 		}
 		catch (Throwable t)
@@ -185,7 +193,7 @@ public class UltramineServerModContainer extends DummyModContainer
 			e.registerCommands(BasicCommands.class);
 			e.registerCommands(TechCommands.class);
 			e.registerCommands(GenWorldCommand.class);
-			e.registerCommands(EconomyCommands.class);
+
 			e.registerCommands(OpenInvCommands.class);
 			
 			if(e.getSide().isServer())
