@@ -36,7 +36,7 @@ import org.ultramine.server.event.ForgeModIdMappingEvent;
 import org.ultramine.server.internal.SyncServerExecutorImpl;
 import org.ultramine.server.internal.UMEventHandler;
 import org.ultramine.server.internal.OpBasedPermissions;
-import org.ultramine.server.tools.ButtonCommand;
+
 import org.ultramine.server.tools.ItemBlocker;
 import org.ultramine.server.util.GlobalExecutors;
 
@@ -60,7 +60,7 @@ import cpw.mods.fml.common.event.FMLServerStoppedEvent;
 import cpw.mods.fml.common.network.NetworkCheckHandler;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
+
 import org.ultramine.core.permissions.Permissions;
 
 public class UltramineServerModContainer extends DummyModContainer
@@ -71,8 +71,7 @@ public class UltramineServerModContainer extends DummyModContainer
 	@InjectService private static EconomyRegistry economyRegistry;
 	
 	private LoadController controller;
-	@SideOnly(Side.SERVER)
-	private ButtonCommand buttonCommand;
+
 	private ItemBlocker itemBlocker;
 	private final RecipeCache recipeCache = new RecipeCache();
 	
@@ -172,7 +171,7 @@ public class UltramineServerModContainer extends DummyModContainer
 			e.getServer().getMultiWorld().register();
 			if(e.getSide().isServer())
 			{
-				buttonCommand = new ButtonCommand(e.getServer());
+
 				itemBlocker = new ItemBlocker();
 			}
 		}
@@ -197,7 +196,7 @@ public class UltramineServerModContainer extends DummyModContainer
 			
 			if(e.getSide().isServer())
 			{
-				buttonCommand.load(e);
+
 				itemBlocker.load();
 				e.getServer().getScheduler().start();
 			}
@@ -241,7 +240,7 @@ public class UltramineServerModContainer extends DummyModContainer
 			
 			if(e.getSide().isServer())
 			{
-				buttonCommand.unload();
+
 				MinecraftServer.getServer().getScheduler().stop();
 			}
 		}
