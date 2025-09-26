@@ -43,13 +43,13 @@ public class ServerCommandManager extends CommandHandler implements IAdminComman
 
 	public ServerCommandManager()
 	{
-		this.registerCommand(new CommandTime());
+
 		this.registerCommand(new CommandGameMode());
-		this.registerCommand(new CommandDifficulty());
+
 		this.registerCommand(new CommandDefaultGameMode());
 		this.registerCommand(new CommandKill());
 		this.registerCommand(new CommandToggleDownfall());
-		this.registerCommand(new CommandWeather());
+
 		this.registerCommand(new CommandXP());
 		
 		this.registerCommand(new CommandGive());
