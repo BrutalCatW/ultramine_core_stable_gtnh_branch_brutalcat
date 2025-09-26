@@ -11,10 +11,10 @@ import net.minecraft.util.StringTranslate;
 import net.minecraftforge.common.MinecraftForge;
 
 import org.ultramine.commands.CommandRegistry;
-import org.ultramine.commands.basic.BasicCommands;
+
 
 import org.ultramine.commands.basic.GenWorldCommand;
-import org.ultramine.commands.basic.OpenInvCommands;
+
 import org.ultramine.commands.basic.TechCommands;
 
 import org.ultramine.commands.syntax.DefaultCompleters;
@@ -190,11 +190,11 @@ public class UltramineServerModContainer extends DummyModContainer
 		{
 			e.getServer().getConfigurationManager().getDataLoader().registerPlayerDataExt(PlayerCoreData.class, "core");
 			e.registerArgumentHandlers(DefaultCompleters.class);
-			e.registerCommands(BasicCommands.class);
+
 			e.registerCommands(TechCommands.class);
 			e.registerCommands(GenWorldCommand.class);
 
-			e.registerCommands(OpenInvCommands.class);
+
 			
 			if(e.getSide().isServer())
 			{
